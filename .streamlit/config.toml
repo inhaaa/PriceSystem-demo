@@ -13,3 +13,4 @@ gatherUsageStats = false
 headless = true
 address = "127.0.0.1"
 maxUploadSize = 2
+enableStaticServing = true

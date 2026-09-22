@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="none" fill="none">
+  <defs>
+    <linearGradient id="cr-silver" x1="0" y1="0" x2="1" y2=".8">
+      <stop stop-color="#ffffff"/>
+      <stop offset=".21" stop-color="#f5f7f8"/>
+      <stop offset=".37" stop-color="#bcc4c8"/>
+      <stop offset=".405" stop-color="#fff"/>
+      <stop offset=".64" stop-color="#eef1f2"/>
+      <stop offset="1" stop-color="#a4adb3"/>
+    </linearGradient>
+    <linearGradient id="cr-clear" x1=".1" y1="1" x2=".9" y2="0">
+      <stop stop-color="#aab3b8" stop-opacity=".1"/>
+      <stop offset=".47" stop-color="#fff" stop-opacity=".92"/>
+      <stop offset=".67" stop-color="#c3cbd0" stop-opacity=".21"/>
+      <stop offset="1" stop-color="#727f87" stop-opacity=".52"/>
+    </linearGradient>
+    <linearGradient id="cr-mirror" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#28343c"/>
+      <stop offset=".21" stop-color="#6b7880"/>
+      <stop offset=".34" stop-color="#dbe1e4"/>
+      <stop offset=".36" stop-color="#ffffff"/>
+      <stop offset=".64" stop-color="#fff"/>
+      <stop offset=".67" stop-color="#bac3c8"/>
+      <stop offset="1" stop-color="#eef2f4"/>
+    </linearGradient>
+    <linearGradient id="cr-flash" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#eef2f4"/>
+      <stop offset=".32" stop-color="#ffffff"/>
+      <stop offset=".47" stop-color="#ffffff"/>
+      <stop offset=".5" stop-color="#919da5"/>
+      <stop offset=".55" stop-color="#d9dfe3"/>
+      <stop offset=".76" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#87959d"/>
+    </linearGradient>
+    <linearGradient id="cr-shade" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#34434c" stop-opacity=".65"/>
+      <stop offset=".42" stop-color="#8a979e" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#dfe5e8" stop-opacity=".05"/>
+    </linearGradient>
+    <linearGradient id="cr-left-fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="510" y2="0">
+      <stop stop-color="#fff"/>
+      <stop offset=".28" stop-color="#fff"/>
+      <stop offset=".61" stop-color="#999"/>
+      <stop offset=".85" stop-color="#222"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="cr-right-fade" gradientUnits="userSpaceOnUse" x1="1600" y1="0" x2="1100" y2="0">
+      <stop stop-color="#fff"/>
+      <stop offset=".26" stop-color="#fff"/>
+      <stop offset=".62" stop-color="#888"/>
+      <stop offset=".87" stop-color="#1b1b1b"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="cr-top-fade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="160">
+      <stop stop-color="#fff"/>
+      <stop offset=".48" stop-color="#444"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="cr-glint" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".4" stop-color="#fff"/>
+      <stop offset=".7" stop-color="#fff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="cr-air">
+      <stop offset=".3" stop-color="#fff"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="cr-left"><rect width="550" height="1000" fill="url(#cr-left-fade)"/></mask>
+    <mask id="cr-right"><rect x="1050" width="550" height="1000" fill="url(#cr-right-fade)"/></mask>
+    <mask id="cr-top"><rect width="1600" height="170" fill="url(#cr-top-fade)"/></mask>
+  </defs>
+  <!-- Peripheral optical planes with an untextured work area. -->
+  <rect width="1600" height="1000" fill="#f7f8f9"/>
+  <ellipse cx="810" cy="465" rx="1050" ry="840" fill="url(#cr-air)"/>
+
+  <g mask="url(#cr-left)">
+    <!-- Broad transparent planes. Interior reflected cuts supply the texture, not a wire grid. -->
+    <path d="M-90-90 331 18 423 155 276 315-45 239Z" fill="url(#cr-silver)" opacity=".72"/>
+    <path d="M-90-90 156 73 276 315-45 239Z" fill="url(#cr-clear)"/>
+    <path d="m156 73 175-55 92 137-147 160Z" fill="#fff" opacity=".56"/>
+    <path d="M-45 239 276 315 356 457 173 569-69 467Z" fill="url(#cr-clear)"/>
+    <path d="m276 315 174-74-94 216Z" fill="url(#cr-silver)" opacity=".45"/>
+    <path d="M-69 467 173 569 297 736 51 833-91 691Z" fill="url(#cr-silver)" opacity=".65"/>
+    <path d="m173 569 183-112 72 198-131 81Z" fill="url(#cr-clear)" opacity=".7"/>
+    <path d="M-91 691 51 833 297 736 476 974 319 1100-80 1100Z" fill="url(#cr-clear)"/>
+    <path d="M51 833 169 924 319 1100-80 1100Z" fill="url(#cr-silver)" opacity=".65"/>
+    <path d="m297 736 51 177 128 61Z" fill="#fff" opacity=".86"/>
+
+    <!-- Reflections inside the upper cut: interrupted, mirrored and sharply bounded. -->
+    <path d="M-20 3 114 53 75 174-20 204Z" fill="url(#cr-mirror)" opacity=".76"/>
+    <path d="m114 53 42 20 64 128-145-27Z" fill="url(#cr-flash)" opacity=".87"/>
+    <path d="m156 73 23 37 55-76 97-16Z" fill="url(#cr-shade)" opacity=".65"/>
+    <path d="m179 110 55-76-27 80 42 64Z" fill="#fff" opacity=".94"/>
+    <path d="m75 174 57-17 88 44-34 53-102-3Z" fill="url(#cr-clear)"/>
+    <path d="m75 174 9 77-72-27Z" fill="#eef2f3"/>
+    <path d="m-20 204 32 20 72 27-129-12Z" fill="#53616a" opacity=".55"/>
+    <path d="m84 251 102 3 90 61-50-82Z" fill="url(#cr-flash)" opacity=".95"/>
+    <path d="m186 254 11-41 29 20 50 82Z" fill="#fff"/>
+    <path d="m220 201 34-29 40 65-18 78Z" fill="url(#cr-mirror)" opacity=".34"/>
+    <path d="m254 172 81-44 88 27-129 82Z" fill="#fff" opacity=".78"/>
+    <path d="m335 128 45 7 43 20-83 36Z" fill="url(#cr-shade)" opacity=".35"/>
+    <path d="m12 224 4-86 8-21-2 112Z" fill="#fff" opacity=".92"/>
+    <path d="m118 61 8 3-33 98-10 8Z" fill="#fff"/>
+
+    <!-- Central margin: translucent thickness, a dark return reflection and white flashes. -->
+    <path d="m-45 239 129 12 77 84-97 58-77-56Z" fill="url(#cr-flash)" opacity=".75"/>
+    <path d="m-13 337 77 56-17 109-116-35Z" fill="url(#cr-mirror)" opacity=".64"/>
+    <path d="m64 393 72-40 40 109-3 107-126-67Z" fill="url(#cr-clear)"/>
+    <path d="m84 251 90 27-13 57Z" fill="#fff" opacity=".82"/>
+    <path d="m161 335 13-57 102 37-54 82Z" fill="url(#cr-silver)" opacity=".57"/>
+    <path d="m161 335 61 62-46 65-40-109Z" fill="#fff" opacity=".85"/>
+    <path d="m222 397 54-82 27 47-17 61-110 39Z" fill="url(#cr-mirror)" opacity=".4"/>
+    <path d="m286 423 70 34-183 112 60-60Z" fill="url(#cr-flash)" opacity=".75"/>
+    <path d="m47 502 25-44 13 12 2 46 86 53Z" fill="#fff"/>
+    <path d="m-13 337 10 5 50 63-10 59-5-57Z" fill="#25343e" opacity=".52"/>
+    <path d="m2 350 8 9 42 46-15 59 10-59Z" fill="#fff" opacity=".95"/>
+    <path d="m222 397 5 5-44 70-10 97 3-107Z" fill="#fff" opacity=".92"/>
+
+    <!-- Lower return: uneven slivers of reflected light, no complete gemstone silhouette. -->
+    <path d="M-69 467 47 502 33 604-8 635-76 577Z" fill="url(#cr-clear)"/>
+    <path d="m47 502 126 67-87 64-53-29Z" fill="url(#cr-flash)" opacity=".8"/>
+    <path d="m-8 635 41-31 53 29-45 94-132-36Z" fill="url(#cr-mirror)" opacity=".65"/>
+    <path d="m86 633 87-64 39 52-47 92-124 14Z" fill="#fff" opacity=".73"/>
+    <path d="m212 621 85 115-132-23Z" fill="url(#cr-silver)"/>
+    <path d="m41 727 124-14-35 93-79 27-142-142Z" fill="url(#cr-clear)"/>
+    <path d="m165 713 132 23-94 75-73-5Z" fill="url(#cr-flash)" opacity=".65"/>
+    <path d="m-91 691 88 45 54 97-88-40Z" fill="url(#cr-mirror)" opacity=".74"/>
+    <path d="m51 833 79-27 73 5-34 113Z" fill="url(#cr-mirror)" opacity=".65"/>
+    <path d="m203 811 94-75 51 177-108-40Z" fill="#fff" opacity=".84"/>
+    <path d="m169 924 34-113 37 62 29 61-33 72Z" fill="url(#cr-flash)" opacity=".94"/>
+    <path d="m240 873 108 40 128 61-154-12-53-28Z" fill="url(#cr-clear)"/>
+    <path d="M-37 793 51 833 80 963-55 1057Z" fill="url(#cr-silver)"/>
+    <path d="m51 833 118 91-89 39Z" fill="#fff" opacity=".93"/>
+    <path d="m80 963 89-39 67 82-33 94H-55Z" fill="url(#cr-mirror)" opacity=".73"/>
+    <path d="m80 963 45-9 35 10-52 16Z" fill="#fff"/>
+    <path d="m169 924 9 12 58 70-11 18-28-57Z" fill="#fff"/>
+    <path d="m33 604 5-7 20 19-28 79-15 11 25-64Z" fill="#fff"/>
+    <path d="m165 713 7 1-24 69-18 23Z" fill="#52616a" opacity=".42"/>
+    <path d="m172 714 4 1-24 77-22 14Z" fill="#fff"/>
+    <path d="m322 962 83 17 71-5-128-61Z" fill="url(#cr-silver)" opacity=".58"/>
+
+    <g stroke="url(#cr-glint)" stroke-linecap="round">
+      <path d="M-12 31 156 73 276 315M-3 340 64 393M47 502 173 569M51 833 169 924 269 934" stroke-width="1.2"/>
+      <path d="m84 251 142-18 50 82M33 604 53 29 79 80M203 811 37 62 108 40" stroke-width=".75"/>
+    </g>
+    <path d="m120 65 3 1-28 92-4 5Z" fill="#d8e5e7" opacity=".55"/>
+  </g>
+
+  <g mask="url(#cr-right)">
+    <path d="M1660-90 1310 51 1206 209 1367 333 1662 252Z" fill="url(#cr-clear)"/>
+    <path d="m1310 51 154 35-97 247-161-124Z" fill="url(#cr-silver)" opacity=".54"/>
+    <path d="M1367 333 1662 252 1680 521 1510 621 1283 552Z" fill="url(#cr-silver)" opacity=".62"/>
+    <path d="m1367 333-84 219-114-180Z" fill="url(#cr-clear)" opacity=".72"/>
+    <path d="M1680 521 1510 621 1398 805 1660 939Z" fill="url(#cr-clear)"/>
+    <path d="m1510 621-227-69-93 258 208-5Z" fill="url(#cr-silver)" opacity=".47"/>
+    <path d="M1398 805 1660 939 1660 1100 1221 1050 1142 947Z" fill="url(#cr-clear)"/>
+    <path d="m1398 805-107 154-149-12Z" fill="#fff" opacity=".88"/>
+
+    <!-- Asymmetric optical echoes, changing orientation across the cuts. -->
+    <path d="m1567-35-48 140-55-19-37-42Z" fill="url(#cr-mirror)" opacity=".69"/>
+    <path d="M1567-35 1660-90 1662 99 1564 190 1519 105Z" fill="url(#cr-flash)" opacity=".84"/>
+    <path d="m1427 44 37 42-73 65-81-100Z" fill="#fff" opacity=".79"/>
+    <path d="m1464 86 55 19-56 110-72-64Z" fill="url(#cr-clear)"/>
+    <path d="m1310 51 81 100-87 4-98 54Z" fill="url(#cr-shade)" opacity=".38"/>
+    <path d="m1304 155 87-4-24 182-71-102Z" fill="#fff" opacity=".84"/>
+    <path d="m1391 151 72 64-27 79-69 39Z" fill="url(#cr-flash)" opacity=".93"/>
+    <path d="m1519 105 45 85-38 85-63-60Z" fill="url(#cr-mirror)" opacity=".62"/>
+    <path d="m1564 190 98-91v153l-136 23Z" fill="url(#cr-clear)"/>
+    <path d="m1436 294 27-79 63 60-12 40-147 18Z" fill="url(#cr-silver)" opacity=".9"/>
+    <path d="m1526 275 91-14 45-9-148 63Z" fill="#fff" opacity=".93"/>
+    <path d="m1519 105 8 15-48 79-16 16Z" fill="#fff"/>
+    <path d="m1564 190 8-7-20 58-26 34Z" fill="#3f505a" opacity=".46"/>
+    <path d="m1572 183 5-5-18 62-33 35Z" fill="#fff"/>
+
+    <path d="m1367 333 147-18-83 127-71-22Z" fill="url(#cr-clear)"/>
+    <path d="m1514 315 148-63-88 144-143 46Z" fill="url(#cr-flash)" opacity=".78"/>
+    <path d="M1662 252 1680 521 1579 477 1574 396Z" fill="url(#cr-mirror)" opacity=".66"/>
+    <path d="m1574 396 5 81-76 58-72-93Z" fill="#fff" opacity=".89"/>
+    <path d="m1431 442 72 93 7 86-136-68-14-133Z" fill="url(#cr-silver)" opacity=".72"/>
+    <path d="m1360 420 14 133-91-1Z" fill="#fff" opacity=".88"/>
+    <path d="m1579 477 101 44-170 100-7-86Z" fill="url(#cr-flash)" opacity=".7"/>
+    <path d="m1431 442 31-47 52-80-39 77Z" fill="#fff" opacity=".91"/>
+    <path d="m1574 396 8-14 5 91-8 4Z" fill="#fff"/>
+    <path d="m1503 535 6 7 12 61-11 18Z" fill="#7d8b93" opacity=".45"/>
+    <path d="m1512 540 8-5 9 56-8 12Z" fill="#fff"/>
+
+    <path d="M1680 521 1594 654 1538 692 1510 621Z" fill="url(#cr-clear)"/>
+    <path d="m1594 654 79-26-13 162-98-7-24-91Z" fill="url(#cr-mirror)" opacity=".62"/>
+    <path d="m1510 621 28 71-91 46-49 67-20-85Z" fill="url(#cr-flash)" opacity=".75"/>
+    <path d="m1378 720 20 85-208 5 132-75Z" fill="#fff" opacity=".69"/>
+    <path d="m1538 692 24 91-73 52-91-30 49-67Z" fill="url(#cr-clear)"/>
+    <path d="m1562 783 98 7v149l-128-60-43-44Z" fill="url(#cr-silver)" opacity=".91"/>
+    <path d="m1398 805 91 30-61 100-137 24Z" fill="url(#cr-flash)" opacity=".69"/>
+    <path d="m1489 835 43 44-35 90-69-34Z" fill="#fff" opacity=".97"/>
+    <path d="m1532 879 128 60v133l-104-41-59-62Z" fill="url(#cr-mirror)" opacity=".69"/>
+    <path d="m1428 935 69 34 59 62-167 40-98-112Z" fill="url(#cr-silver)" opacity=".69"/>
+    <path d="m1291 959 137-24-57 44-72 53-78 18-79-103Z" fill="url(#cr-clear)"/>
+    <path d="m1398 805 15 5-47 73-75 76 44-67Z" fill="#fff" opacity=".93"/>
+    <path d="m1594 654-4 24-38 39-14-25Z" fill="#fff"/>
+    <path d="m1562 783 10 1-54 58-29-7Z" fill="#50616b" opacity=".48"/>
+    <path d="m1572 784 8 1-52 59-39-9Z" fill="#fff"/>
+    <path d="m1532 879 8 4-24 76-19 10Z" fill="#fff"/>
+    <path d="m1556 1031 29-4 39 13 36 32Z" fill="#fff"/>
+    <g stroke="url(#cr-glint)" stroke-linecap="round">
+      <path d="m1310 51 154 35 55 19M1367 333l69-39 190-34M1431 442l143-46M1398 805l91 30 43 44 128 60" stroke-width="1.25"/>
+      <path d="m1510 621 28 71 24 91M1291 959l137-24 69 34M1519 105l45 85" stroke-width=".8"/>
+    </g>
+    <path d="m1565 785 4 1-47 50-7 2Z" fill="#e8e0d4" opacity=".62"/>
+  </g>
+
+  <!-- Faint upper reflections connect the chamber without interrupting the reading area. -->
+  <g mask="url(#cr-top)" opacity=".37">
+    <path d="M289-50 572 24 448 106 331 18Z" fill="url(#cr-clear)"/>
+    <path d="M572 24 797-70 887 66 718 87Z" fill="url(#cr-silver)" opacity=".64"/>
+    <path d="m887 66 165-106 258 91-151 64Z" fill="url(#cr-clear)"/>
+    <path d="m448 106 124-82 146 63Z" fill="#fff" opacity=".95"/>
+    <path d="m1052-40-41 68 148 87-54-95Z" fill="url(#cr-mirror)" opacity=".31"/>
+    <path d="m333 19 115 87 124-82M887 66l272 49" stroke="url(#cr-glint)" stroke-width="1"/>
+  </g>
+</svg>

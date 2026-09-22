@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="none" fill="none">
+  <defs>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#e0e6e9" stop-opacity=".24"/>
+      <stop offset=".42" stop-color="#a9b5bd" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#101214" stop-opacity=".01"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="1" y1="0" x2="0" y2="1">
+      <stop stop-color="#d7e2e7" stop-opacity=".16"/>
+      <stop offset=".48" stop-color="#59636a" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#070809" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".35" stop-color="#d6e4ec" stop-opacity=".38"/>
+      <stop offset=".72" stop-color="#b3c1c8" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#bacbd4" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#bacbd4" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="void">
+      <stop offset=".2" stop-color="#090a0b" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#090a0b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Original vector geometry: a cut-crystal interior, not a gemstone photograph. -->
+  <g stroke="url(#edge)" stroke-width=".65" stroke-linejoin="round">
+    <polygon points="-80,-100 415,95 298,340 -65,222" fill="url(#glass)"/>
+    <polygon points="-80,-100 180,75 298,340" fill="url(#silver)"/>
+    <polygon points="180,75 415,95 298,340" fill="#b6c5cf" fill-opacity=".045"/>
+    <polygon points="-65,222 298,340 124,548 -98,681" fill="url(#silver)"/>
+    <polygon points="298,340 398,508 124,548" fill="url(#glass)"/>
+    <polygon points="124,548 398,508 257,764 -98,681" fill="url(#glass)"/>
+    <polygon points="-98,681 257,764 109,1090 -80,1090" fill="url(#silver)"/>
+    <polygon points="257,764 426,943 109,1090" fill="url(#glass)"/>
+    <polygon points="1680,-90 1238,172 1338,369 1660,280" fill="url(#silver)"/>
+    <polygon points="1238,172 1478,94 1338,369" fill="#c7d7e0" fill-opacity=".055"/>
+    <polygon points="1238,172 1144,310 1338,369" fill="url(#glass)"/>
+    <polygon points="1338,369 1660,280 1530,622 1254,583" fill="url(#glass)"/>
+    <polygon points="1660,280 1710,769 1530,622" fill="url(#silver)"/>
+    <polygon points="1254,583 1530,622 1170,836" fill="url(#silver)"/>
+    <polygon points="1530,622 1710,769 1525,1100 1170,836" fill="url(#glass)"/>
+    <polygon points="1170,836 1360,988 1010,1080" fill="url(#silver)"/>
+    <polygon points="415,95 700,-90 985,-50 846,142" fill="url(#glass)" opacity=".5"/>
+    <polygon points="846,142 985,-50 1144,310" fill="url(#silver)" opacity=".4"/>
+    <polygon points="-80,1090 515,826 795,1090" fill="url(#floor)" opacity=".6"/>
+    <polygon points="515,826 1140,950 795,1090" fill="url(#floor)" opacity=".5"/>
+  </g>
+  <g stroke="url(#edge)" stroke-width=".45" opacity=".45">
+    <path d="M-80 430 398 508 700 -90M257 764 515 826 1140 950 1530 622M846 142 1144 310 1254 583"/>
+    <path d="m0 910 124-362 174-208M1600 100 1478 94 1338 369"/>
+  </g>
+  <ellipse cx="800" cy="510" rx="520" ry="470" fill="url(#void)"/>
+</svg>

@@ -14,8 +14,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class IsolationTests(unittest.TestCase):
+    def test_csv_export_keeps_user_text_from_becoming_spreadsheet_formulas(self):
+        from demo.ui import csv_bytes
+        import csv
+        import io
+
+        rows = [{"공고명": value, "금액": 42} for value in ["=1+1", " +1", "-1", "@SUM(1)", "\t=1", "가상 공고"]]
+        exported = list(csv.DictReader(io.StringIO(csv_bytes(rows).decode("utf-8-sig"))))
+        self.assertTrue(all(row["공고명"].startswith("'") for row in exported[:5]))
+        self.assertEqual(exported[-1], {"공고명": "가상 공고", "금액": "42"})
+
+    def test_allowlist_excludes_runtime_data_and_contains_all_local_assets(self):
+        files = (ROOT / "PUBLIC_FILES.txt").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(files), len(set(files)))
+        for relative in files:
+            path = ROOT / relative
+            self.assertTrue(path.is_file(), relative)
+            self.assertFalse(Path(relative).is_absolute(), relative)
+            self.assertFalse(set(Path(relative).parts) & {"..", ".git", ".local", ".venv", "data", "uploads", "logs"}, relative)
+            self.assertNotIn(path.suffix.lower(), {".db", ".sqlite", ".sqlite3", ".log", ".pem", ".key"}, relative)
+            self.assertNotIn(path.name.lower(), {".env", "secrets.toml", "users.json"}, relative)
+
     def test_application_has_only_declared_imports(self):
-        allowed = {"base64", "csv", "datetime", "html", "io", "pathlib", "sqlite3", "pandas", "streamlit", "demo"}
+        allowed = {"base64", "csv", "datetime", "html", "io", "json", "re", "pathlib", "sqlite3", "pandas", "streamlit", "demo"}
         for path in [ROOT / "app.py", *sorted((ROOT / "demo").glob("*.py"))]:
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                 if isinstance(node, ast.Import):

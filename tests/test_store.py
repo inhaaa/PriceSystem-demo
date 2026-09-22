@@ -86,6 +86,16 @@ class StoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "코드"):
             self.store.save_notice(self.notice)
 
+    def test_deleted_ids_are_not_reused_by_new_session_records(self):
+        last_id = self.store.notices()[-1]["id"]
+        self.store.delete_notice(last_id)
+        new_id = self.store.save_notice(self.notice)
+        self.assertGreater(new_id, last_id)
+        item = self.store.submissions()[-1]
+        self.store.delete_submission(item["id"])
+        new_submission = self.store.save_submission(item)
+        self.assertGreater(new_submission, item["id"])
+
     def test_oversized_numeric_input_has_a_korean_validation_message(self):
         with self.assertRaisesRegex(ValueError, "금액"):
             self.store.save_notice({**self.notice, "base_amount": "9" * 5000})

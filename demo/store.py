@@ -44,14 +44,14 @@ class DemoStore:
         self._db.executescript("""
             CREATE TABLE categories (name TEXT PRIMARY KEY);
             CREATE TABLE notices (
-                id INTEGER PRIMARY KEY, code TEXT NOT NULL UNIQUE,
+                id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE,
                 title TEXT NOT NULL, agency TEXT NOT NULL,
                 category TEXT NOT NULL REFERENCES categories(name) ON UPDATE CASCADE,
                 region TEXT NOT NULL, base_amount INTEGER NOT NULL,
                 deadline TEXT NOT NULL, status TEXT NOT NULL, memo TEXT NOT NULL
             );
             CREATE TABLE submissions (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 notice_id INTEGER NOT NULL REFERENCES notices(id) ON DELETE CASCADE,
                 company TEXT NOT NULL, amount INTEGER NOT NULL,
                 status TEXT NOT NULL, memo TEXT NOT NULL
