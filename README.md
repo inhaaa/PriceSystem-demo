@@ -40,6 +40,12 @@ PriceSystem은 공고와 관련 자료를 등록하고, 분석 화면을 거쳐 
 
 ## 화면 미리보기
 
+### 로그인
+
+공개 체험 계정으로 시작하는 데모 로그인 화면입니다.
+
+![PriceSystem 데모 로그인 화면](docs/images/login.png)
+
 ### 홈과 업무 공간
 
 업무 바로가기에서 필요한 화면을 열고, 여러 업무 탭 사이를 이동할 수 있습니다.
@@ -61,13 +67,6 @@ PriceSystem은 공고와 관련 자료를 등록하고, 분석 화면을 거쳐 
 공고를 선택하고 시연용 추천 결과를 확인합니다. 표시되는 금액은 실제 분석 결과가 아닌 고정 샘플입니다.
 
 ![고정 샘플 안내가 표시된 분석 화면](docs/images/analysis.png)
-
-</details>
-
-<details>
-<summary><strong>로그인 화면 보기</strong> — 공개 체험 계정으로 시작</summary>
-
-![PriceSystem 데모 로그인 화면](docs/images/login.png)
 
 </details>
 
