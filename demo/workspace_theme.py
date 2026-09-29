@@ -274,8 +274,8 @@ __SCOPE__ :is([data-testid="stDialog"] [role="dialog"], [data-testid="stPopoverB
   border: 1px solid var(--ps-sheet-border); border-radius: 8px;
 }
 __SCOPE__ [role="option"][aria-selected="true"], __SCOPE__ [role="option"]:hover { background: var(--ps-sheet-head); color: var(--ps-sheet-ink); }
-__SCOPE__ [data-testid="stButton"] button[kind="primary"],
-__SCOPE__ [data-testid="stFormSubmitButton"] button[kind="primary"] { color: #f4f3ef; background: #292824; border-color: #69665e; }
+__SCOPE__ [data-testid="stButton"] button[kind="primary"]:not(:disabled),
+__SCOPE__ [data-testid="stFormSubmitButton"] button:is([kind="primary"], [kind="primaryFormSubmit"]):not(:disabled) { color: #f4f3ef; background: #292824; border-color: #69665e; }
 __SCOPE__ [data-testid="stButton"] button:focus-visible { outline: 2px solid var(--ps-focus-outline); outline-offset: 2px; }
 __SCOPE__ div[class*="st-key-home_featured_"] div[class*="st-key-home_open_"] button {
   width: auto; padding: .55rem .9rem; margin-top: 12px;
@@ -336,8 +336,8 @@ __LIGHT__ {
   --ps-primary: #1d2a36;
   --ps-primary-hover: #0b1219;
   --ps-primary-soft: #0e21360f;
-  --ps-action: #e8edf3;
-  --ps-action-hover: #dce5ee;
+  --ps-action: #1d2a36;
+  --ps-action-hover: #0f1a24;
   --ps-focus-outline: #2f6f96;
   --ps-focus-color: #2f6f9636;
   --ps-glass: linear-gradient(128deg, #ffffffee, #ffffffb8 56%, #dfeaf4a8);
@@ -388,8 +388,8 @@ __LIGHT__ .st-key-workspace_home .home-launcher p { color: #5d6a77; }
 __LIGHT__ .home-action-card__content .material-symbols-rounded { color: #2f6f96; background: #2f6f9610; }
 __LIGHT__ div[class*="st-key-home_featured_"]:hover,
 __LIGHT__ div[class*="st-key-home_secondary_"]:not([class*="st-key-home_secondary_grid"]):hover { border-color: #0e213652; }
-__LIGHT__ [data-testid="stButton"] button[kind="primary"],
-__LIGHT__ [data-testid="stFormSubmitButton"] button[kind="primary"] { color: #f6f9fb; background: #1d2a36; border-color: #101a24; }
+__LIGHT__ [data-testid="stButton"] button[kind="primary"]:not(:disabled),
+__LIGHT__ [data-testid="stFormSubmitButton"] button:is([kind="primary"], [kind="primaryFormSubmit"]):not(:disabled) { color: #f6f9fb; background: #1d2a36; border-color: #101a24; }
 /* The filled CTA has to flip: a pale button on white reads as unclickable. */
 __LIGHT__ .st-key-workspace_home :is(.st-key-home_open_daily_recommend, .st-key-home_open_data_upload) button {
   color: #f6f9fb; background: #1d2a36; border: 1px solid #101a24;

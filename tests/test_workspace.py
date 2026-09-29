@@ -6,12 +6,16 @@ from demo import workspace
 
 
 class WorkspaceTests(unittest.TestCase):
-    def test_original_ten_modules_are_not_merged(self):
+    def test_visitor_menu_has_daily_notices_and_no_standalone_calculator(self):
         self.assertEqual([p["label"] for p in workspace.PAGES], [
-            "카테고리 관리", "데이터 등록", "통합 공고 관리", "입찰/낙찰 데이터 조회",
-            "추천투찰금액 계산", "개찰일별 추천계산", "나의 투찰관리", "내 투찰현황",
+            "카테고리 관리", "데이터 등록", "통합 공고 조회", "입찰/낙찰 데이터 조회",
+            "개찰일별 공고관리", "개찰일별 추천계산", "나의 투찰관리", "내 투찰현황",
             "나라장터 API 연동", "결과 관리",
         ])
+        with patch.object(workspace.st, "session_state", {}):
+            workspace.open_tab("daily_notices")
+            with self.assertRaises(ValueError):
+                workspace.open_tab("recommend_price")
 
     def test_tabs_open_once_close_to_neighbor_and_home_clears_them(self):
         state = {}

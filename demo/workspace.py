@@ -7,9 +7,9 @@ from demo.ui import brand, header, home_action_card_html, workspace_tab_scroll_s
 PAGES = [
     dict(key="category", label="카테고리 관리", description="분류 기준을 만들고 연결된 공고를 관리합니다.", group="기준 정보", icon=":material/category:"),
     dict(key="data_upload", label="데이터 등록", description="입찰·낙찰 데이터를 등록하고 처리 결과를 확인합니다.", group="데이터 업무", icon=":material/upload_file:"),
-    dict(key="integrated_bids", label="통합 공고 관리", description="통합된 공고 정보와 출처, 상세 자료를 함께 관리합니다.", group="데이터 업무", icon=":material/list_alt:"),
+    dict(key="integrated_bids", label="통합 공고 조회", description="공고를 검색하고 상세 정보를 확인합니다.", group="데이터 업무", icon=":material/list_alt:"),
     dict(key="bid_award_search", label="입찰/낙찰 데이터 조회", description="입찰과 낙찰 데이터를 조건별로 검색하고 상세 정보를 조회합니다.", group="데이터 업무", icon=":material/search:"),
-    dict(key="recommend_price", label="추천투찰금액 계산", description="관심공고의 추천 결과를 표시용 샘플로 확인합니다.", group="추천 업무", icon=":material/calculate:"),
+    dict(key="daily_notices", label="개찰일별 공고관리", description="개찰일별 공고를 확인하고 관심 공고를 관리합니다.", group="추천 업무", icon=":material/edit_calendar:"),
     dict(key="daily_recommend", label="개찰일별 추천계산", description="개찰일별로 관심공고를 모아 샘플 추천 결과를 확인합니다.", group="추천 업무", icon=":material/calendar_month:"),
     dict(key="my_bid_manage", label="나의 투찰관리", description="추천금액과 투찰 결과를 가상 공고별로 기록하고 관리합니다.", group="투찰 업무", icon=":material/work:"),
     dict(key="my_bid_status", label="내 투찰현황", description="나의 투찰 결과와 낙찰상태를 샘플로 확인합니다.", group="투찰 업무", icon=":material/monitoring:"),

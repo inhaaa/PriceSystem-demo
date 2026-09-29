@@ -12,7 +12,44 @@ from demo import ui
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def contrast_ratio(first, second):
+    def luminance(color):
+        channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+                  for value in channels]
+        return sum(value * weight for value, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
+    light, dark = sorted((luminance(first), luminance(second)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
 class VisualStructureTests(unittest.TestCase):
+    def test_primary_and_disabled_buttons_have_readable_text_in_both_themes(self):
+        css = (ROOT / "assets/demo.css").read_text(encoding="utf-8")
+        theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
+        disabled = re.search(r'\):disabled\s*\{([^}]+)\}', css).group(1)
+        disabled_style = dict(re.findall(r'([\w-]+)\s*:\s*([^;]+);', disabled))
+        for name, block in re.findall(r'__(SCOPE|LIGHT)__\s*\{([^}]+)\}', theme):
+            palette = dict(re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', block))
+            for state, text, background in (
+                ("primary", "#ffffff", palette["--ps-action"]),
+                ("primary hover", "#ffffff", palette["--ps-action-hover"]),
+                ("disabled", disabled_style["color"], disabled_style["background"]),
+            ):
+                with self.subTest(theme=name, state=state):
+                    def resolve(value):
+                        return palette[value[4:-1]] if value.startswith("var(") else value
+                    self.assertGreaterEqual(contrast_ratio(resolve(text), resolve(background)), 4.5)
+        self.assertEqual(disabled_style["opacity"], "1", "Opacity must not wash out disabled labels")
+        self.assertEqual(disabled_style["cursor"], "not-allowed")
+
+    def test_primary_theme_rules_cover_form_buttons_and_preserve_disabled_styles(self):
+        theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
+        for scope in ("__SCOPE__", "__LIGHT__"):
+            rule = re.search(re.escape(scope) + r' \[data-testid="stButton"\] button\[kind="primary"\][^{]+\{', theme).group()
+            with self.subTest(scope=scope):
+                self.assertIn('[kind="primaryFormSubmit"]', rule)
+                self.assertEqual(rule.count(":not(:disabled)"), 2)
+
     def test_login_preserves_the_single_diamond_and_form_flow(self):
         self.assertTrue(callable(getattr(ui, "render_login_page", None)), "Login renderer is missing")
         app = AppTest.from_string(

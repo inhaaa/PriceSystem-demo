@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
-PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "recommend_price", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage"]
+PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage"]
 
 
 class AppJourneys(unittest.TestCase):
@@ -63,17 +63,14 @@ class AppJourneys(unittest.TestCase):
     def test_create_notice_and_reset_restores_seed(self):
         app = self.login(self.new_app())
         initial = len(app.session_state["store"].notices())
-        app.button(key="menu_open_integrated_bids").click().run()
-        app.text_input(key="new_code").set_value("DEMO-TEST-01")
-        app.text_input(key="new_title").set_value("가상 체험 공고")
-        app.text_input(key="new_agency").set_value("가상 기관")
-        app.text_input(key="new_region").set_value("가상 북부")
-        app.button(key="create_notice").click().run()
+        app.button(key="menu_open_data_upload").click().run()
+        app.button(key="current_excel_load_sample").click().run()
+        app.button(key="current_excel_register").click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(len(app.session_state["store"].notices()), initial + 1)
+        self.assertEqual(len(app.session_state["store"].notices()), initial + 2)
         app.button(key="reset_samples").click().run()
         self.assertEqual(len(app.session_state["store"].notices()), initial)
-        self.assertFalse(app.session_state["store"].notices(query="DEMO-TEST-01"))
+        self.assertFalse(app.session_state["store"].notices(query="DEMO-CURRENT_EXCEL"))
 
     def test_visitors_and_logout_are_isolated(self):
         first = self.login(self.new_app())
@@ -88,22 +85,27 @@ class AppJourneys(unittest.TestCase):
         self.login(first)
         self.assertEqual(len(first.session_state["store"].notices()), count)
 
-    def test_notice_edit_search_and_delete(self):
+    def test_integrated_search_is_read_only(self):
         app = self.login(self.new_app())
-        row = app.session_state["store"].notices()[0]
+        initial = app.session_state["store"].notices()
         app.button(key="menu_open_integrated_bids").click().run()
-        app.text_input(key=f"edit_{row['id']}_title").set_value("가상 화면 수정 검증")
-        app.button(key="update_notice").click().run()
-        self.assertEqual(app.session_state["store"].get_notice(row["id"])["title"], "가상 화면 수정 검증")
-        app.text_input(key="notice_search").set_value("가상 화면 수정 검증").run()
-        app.checkbox(key=f"delete_confirm_{row['id']}").set_value(True).run()
-        app.button(key="delete_notice").click().run()
+        keys = {button.key for button in app.button}
+        self.assertFalse({"create_notice", "update_notice", "delete_notice", "restore_notice"} & keys)
+        self.assertEqual(app.session_state["store"].notices(), initial)
         self.assertFalse(app.exception)
-        self.assertFalse(app.session_state["store"].notices(query="가상 화면 수정 검증"))
+
+    def test_removed_tab_is_discarded_on_existing_session(self):
+        app = self.login(self.new_app())
+        app.session_state["open_tabs"] = ["recommend_price", "data_upload"]
+        app.session_state["active_tab"] = "recommend_price"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertNotIn("recommend_price", app.session_state["open_tabs"])
+        self.assertNotEqual(app.session_state["active_tab"], "recommend_price")
 
     def test_analysis_and_api_are_explicit_samples(self):
         app = self.login(self.new_app())
-        app.button(key="menu_open_recommend_price").click().run()
+        app.button(key="menu_open_daily_recommend").click().run()
         self.assertTrue(any("샘플" in str(item.value) for item in app.info))
         app.button(key="menu_open_g2b_api").click().run()
         app.selectbox(key="api_scenario").set_value("오류").run()

@@ -12,7 +12,7 @@ HANDLERS = {
     "data_upload": data_pages.uploads,
     "integrated_bids": data_pages.integrated,
     "bid_award_search": data_pages.query,
-    "recommend_price": bid_pages.recommendation_page,
+    "daily_notices": data_pages.daily_notices,
     "daily_recommend": bid_pages.daily_page,
     "my_bid_manage": bid_pages.management_page,
     "my_bid_status": bid_pages.status_page,
@@ -44,6 +44,9 @@ def main():
             st.error("체험 계정은 admin / admin 입니다.")
         return
     apply_theme()
+    st.session_state["open_tabs"] = [key for key in st.session_state.get("open_tabs", []) if key in HANDLERS]
+    if st.session_state.get("active_tab") not in HANDLERS:
+        st.session_state["active_tab"] = ""
     workspace.sidebar(restart)
     active = st.session_state.get("active_tab", "")
     if not active:
@@ -53,7 +56,7 @@ def main():
         return
     workspace.masthead(active)
     with st.container(key="workspace_surface"):
-        st.caption("DEMO · 가상 데이터 · 분석과 외부 조회는 고정 샘플 · 변경은 현재 세션에만 유지")
+        st.caption("DEMO · 가상 데이터로 체험 중입니다.")
         if message := st.session_state.pop("flash", None):
             st.success(message)
         HANDLERS[active](st.session_state["store"])
