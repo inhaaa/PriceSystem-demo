@@ -118,7 +118,7 @@ __SCOPE__ [data-testid="stAppViewContainer"]::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: url("/app/static/diamond-chamber.svg") center / 100% 100% no-repeat;
+  background: url("./app/static/diamond-chamber.svg") center / 100% 100% no-repeat;
   opacity: 0.96;
   filter: grayscale(1) brightness(1.65);
 }
@@ -195,7 +195,7 @@ __SCOPE__ [data-testid="stSidebar"] {
 }
 __SCOPE__ [data-testid="stSidebar"]::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: url("/app/static/diamond-chamber.svg") left center / auto 100% no-repeat;
+  background: url("./app/static/diamond-chamber.svg") left center / auto 100% no-repeat;
   opacity: 0.65; filter: grayscale(1) brightness(1.6); border-radius: inherit;
 }
 __SCOPE__ [data-testid="stSidebarCollapseButton"] [data-testid="stIconMaterial"],
@@ -348,7 +348,7 @@ __LIGHT__ [data-testid="stAppViewContainer"] {
 /* One static optical surface continues behind the header and sidebar. */
 __LIGHT__ [data-testid="stAppViewContainer"]::before {
   inset: -12px;
-  background: url("/app/static/workspace-crystal.svg") center / 100% 100% no-repeat;
+  background: url("./app/static/workspace-crystal.svg") center / 100% 100% no-repeat;
   filter: grayscale(1) contrast(.98) brightness(1.01);
   opacity: .9;
   transform: none; transition: none; animation: none;

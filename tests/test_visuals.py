@@ -2,6 +2,7 @@
 from pathlib import Path
 import re
 import unittest
+from urllib.parse import urljoin
 
 from streamlit.testing.v1 import AppTest
 
@@ -45,7 +46,11 @@ class VisualStructureTests(unittest.TestCase):
         self.assertTrue(components.is_file(), "Visual components are missing")
         sources = [components, ROOT / "demo/workspace_theme.py", ROOT / "assets/demo.css", ROOT / "assets/login.css"]
         source = "\n".join(path.read_text(encoding="utf-8") for path in sources)
-        assets = set(re.findall(r'/app/static/([A-Za-z0-9_./-]+)', source))
+        urls = set(re.findall(r'(?:\./|/)?app/static/[A-Za-z0-9_./-]+', source))
+        for base in ("https://example.invalid/", "https://example.invalid/~/+/"):
+            for url in urls:
+                self.assertTrue(urljoin(base, url).startswith(base + "app/static/"), url)
+        assets = {url.split("app/static/", 1)[1] for url in urls}
         self.assertGreaterEqual(len(assets), 6)
         for relative in assets:
             self.assertTrue((ROOT / "static" / relative).is_file(), relative)

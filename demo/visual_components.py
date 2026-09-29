@@ -24,7 +24,7 @@ def sidebar_brand_html() -> str:
 
     return (
         '<div class="sidebar-brand">'
-        '<img class="sidebar-brand__mark" src="/app/static/login-diamond-mini.svg" '
+        '<img class="sidebar-brand__mark" src="./app/static/login-diamond-mini.svg" '
         'width="43" height="43" alt="" aria-hidden="true" decoding="async">'
         '<div class="sidebar-brand__copy">'
         '<div class="sidebar-brand__name" style="font-size:1.15rem;letter-spacing:.02em">PriceSystem</div>'
@@ -46,7 +46,7 @@ def login_panel_html(wordmark: object, tagline: object, phrase: object) -> str:
     )
     return (
         '<div class="login-atmosphere" hidden aria-hidden="true">'
-        '<img class="login-atmosphere__architecture" src="/app/static/diamond-chamber.svg" '
+        '<img class="login-atmosphere__architecture" src="./app/static/diamond-chamber.svg" '
         'alt="" draggable="false" decoding="async"/>'
         '<div class="login-atmosphere__light"></div>'
         f'<div class="login-atmosphere__field">{particles}</div>'
@@ -129,7 +129,7 @@ def login_cursor_glow_script() -> str:
   window[KEY] = cleanup;
   let mountLoginAtmosphere;
   try {
-    ({ mountLoginAtmosphere } = await import("/app/static/login-atmosphere.js?v=2"));
+    ({ mountLoginAtmosphere } = await import("./app/static/login-atmosphere.js?v=2"));
   } catch (error) {
     cleanup();
     return;
@@ -158,7 +158,7 @@ def login_cursor_glow_script() -> str:
 
 
 def login_gem_webgl_script(
-    module_url: str = "/app/static/vendor/three.module.min.js",
+    module_url: str = "./app/static/vendor/three.module.min.js",
 ) -> str:
     """Upgrade the login panel gem to a refracting WebGL diamond when possible.
 
@@ -254,7 +254,7 @@ def login_gem_webgl_script(
   try {
     [THREE, { createDiamondOptics }] = await Promise.all([
       import(__MODULE_URL__),
-      import("/app/static/diamond-optics.js?v=1"),
+      import("./app/static/diamond-optics.js?v=1"),
     ]);
   } catch (error) {
     if (disposed) return;
