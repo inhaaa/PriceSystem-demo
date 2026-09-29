@@ -23,6 +23,8 @@ demo/workspace_theme.py
 docs/ARCHITECTURE.md
 docs/DEVELOPMENT.md
 docs/images/analysis.png
+docs/images/architecture.svg
+docs/images/backtest.jpg
 docs/images/data-upload.png
 docs/images/home.png
 docs/images/login.png

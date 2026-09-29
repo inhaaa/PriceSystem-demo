@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="650" viewBox="0 0 1040 650" role="img" aria-labelledby="architecture-title architecture-desc">
+  <title id="architecture-title">PriceSystem 데모 아키텍처</title>
+  <desc id="architecture-desc">app.py의 진입과 세션 관리에서 workspace.py의 메뉴와 업무 탭으로 이어지고, 업무 화면은 저장소와 고정 샘플 서비스를 호출합니다. store.py는 입력 검증과 데이터 조회 및 변경을 담당하며 방문자 세션별 인메모리 SQLite를 사용합니다. samples.py의 새 가상 데이터로 초기화합니다. services.py는 추천, 백테스트, API 화면에 입력과 독립적인 고정 샘플을 반환합니다. 새 세션, 로그아웃, 샘플 초기화 시 기본 샘플로 돌아갑니다.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#6c8092" stroke-width="1.3" stroke-linecap="square" stroke-linejoin="miter"/>
+    </marker>
+    <style>
+      text { font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; fill: #172b40; }
+      .heading { font-size: 34px; font-weight: 700; letter-spacing: -1px; }
+      .body { font-size: 22px; letter-spacing: -0.5px; }
+      .small { font-size: 20px; letter-spacing: -0.3px; }
+      .module { font-family: Consolas, "SFMono-Regular", monospace; font-size: 24px; font-weight: 600; }
+      .number { font-size: 28px; font-weight: 500; fill: #8193a4; }
+      .label { font-size: 22px; font-weight: 600; }
+      .muted { fill: #586a7b; }
+      .flow { fill: none; stroke: #6c8092; stroke-width: 1.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1040" height="650" fill="#ffffff"/>
+  <text x="48" y="56" class="heading">PriceSystem 아키텍처</text>
+  <text x="48" y="91" class="small muted">공통 업무 공간에서 저장소와 고정 샘플 서비스로 이어지는 구조</text>
+  <path d="M48 112 H992" stroke="#d5dde5" stroke-width="1"/>
+
+  <text x="48" y="158" class="number">01</text>
+  <text x="48" y="194" class="label">공통 진입</text>
+  <rect x="176" y="134" width="816" height="108" fill="#f5f7fa"/>
+  <path d="M176 134 H992" stroke="#172b40" stroke-width="1.5"/>
+  <text x="204" y="174" class="module">app.py</text>
+  <text x="204" y="211" class="body">진입 · 세션 관리</text>
+  <path d="M528 188 H594" class="flow"/>
+  <text x="636" y="174" class="module">workspace.py</text>
+  <text x="636" y="211" class="body">메뉴 · Home · 업무 탭</text>
+
+  <path d="M804 243 V262 H584 V282" class="flow"/>
+  <text x="48" y="310" class="number">02</text>
+  <text x="48" y="346" class="label">업무 화면</text>
+  <rect x="176" y="286" width="816" height="102" fill="#ffffff" stroke="#cbd5df" stroke-width="1"/>
+  <path d="M176 286 H992" stroke="#172b40" stroke-width="1.5"/>
+  <text x="204" y="326" class="module">data_pages.py · bid_pages.py</text>
+  <text x="204" y="362" class="body">자료 등록 · 조회 · 추천 화면 · 투찰 · 결과</text>
+
+  <path d="M584 389 V413 H372 V436" class="flow"/>
+  <path d="M584 413 H800 V436" class="flow"/>
+  <circle cx="584" cy="413" r="3" fill="#6c8092"/>
+  <text x="48" y="467" class="number">03</text>
+  <text x="48" y="503" class="label">데이터</text>
+  <text x="48" y="535" class="label">서비스</text>
+
+  <rect x="176" y="440" width="392" height="157" fill="#f3f8fc"/>
+  <path d="M176 440 H568" stroke="#172b40" stroke-width="1.5"/>
+  <rect x="176" y="440" width="4" height="28" fill="#8fb7d2"/>
+  <text x="204" y="477" class="module">store.py</text>
+  <text x="204" y="512" class="small">조회 · 변경 · 입력 검증</text>
+  <text x="204" y="546" class="small">세션별 인메모리 SQLite</text>
+  <path d="M204 559 H540" stroke="#d5e1eb" stroke-width="1"/>
+  <text x="204" y="585" class="small muted">samples.py → 새 샘플로 초기화</text>
+
+  <path d="M608 440 H992" stroke="#172b40" stroke-width="1.5"/>
+  <text x="636" y="477" class="module">services.py</text>
+  <text x="636" y="512" class="small">추천 · 백테스트 · API</text>
+  <text x="636" y="547" class="body">고정 샘플 응답</text>
+  <text x="636" y="585" class="small muted">입력과 독립적인 표시값</text>
+
+  <text x="176" y="632" class="small muted">세션 경계</text>
+  <path d="M275 617 V634" stroke="#cbd5df" stroke-width="1"/>
+  <text x="296" y="632" class="small muted">새 세션 · 로그아웃 · 초기화 시 기본 샘플로 복원</text>
+</svg>
