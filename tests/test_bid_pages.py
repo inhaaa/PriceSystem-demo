@@ -45,6 +45,26 @@ class BidPageJourneys(unittest.TestCase):
                 app.run()
                 self.assertFalse(app.exception)
 
+    def test_recommendation_tabs_show_fixed_backtest_and_highlighted_metrics(self):
+        app = self.page("daily_page")
+        self.assertEqual(["사용자용 추천계산", "백테스트"], [tab.label for tab in app.tabs])
+        app.button(key="backtest_show").click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("실제 검증 성과가 아닙니다" in str(item.value) for item in app.info))
+        self.assertEqual(4, len(next(frame.value for frame in app.dataframe if "결과" in frame.value.columns)))
+        self.assertNotIn("demo_recommendations", app.session_state)
+        app.button(key="daily_search").click().run()
+        app.button(key="daily_check").click().run()
+        app.button(key="daily_calculate").click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("recommendation-amount" in str(item.value) for item in app.markdown))
+        metrics = {item.label: item.value for item in app.metric}
+        self.assertEqual("88.45%", metrics["실투찰율 · 샘플"])
+        self.assertEqual("76.0%", metrics["신뢰도 · 샘플"])
+        result = next(frame.value for frame in app.dataframe if "저장 상태" in frame.value.columns)
+        self.assertIn("실투찰율 (%)", result.columns)
+        self.assertIn("신뢰도 (%)", result.columns)
+
     def test_daily_requires_sample_confirmation_and_saves_selected_result(self):
         app = self.page("daily_page")
         app.button(key="daily_search").click().run()
@@ -232,6 +252,69 @@ class BidPageJourneys(unittest.TestCase):
         from demo.bid_pages import _csv
         content = _csv([{"공고명": "=1+1", "금액": 42}]).decode("utf-8-sig")
         self.assertIn("'=1+1", content)
+
+    def test_status_shows_my_awards_and_excludes_unsubmitted_results(self):
+        app = self.page("status_page")
+        rows = app.dataframe[0].value.set_index("공고번호")
+        self.assertIn("최종 제출금액", rows.columns)
+        self.assertNotIn("내 투찰금액", rows.columns)
+        self.assertEqual(0, rows.loc["DEMO-001", "최종 제출금액"])
+        self.assertEqual(0, rows.loc["DEMO-011", "최종 제출금액"])
+        self.assertTrue(any("완료한 투찰 기록을 기준으로 낙찰 결과를 표시합니다." == item.value for item in app.caption))
+        self.assertEqual("낙찰", rows.loc["DEMO-009", "결과 상태"])
+        self.assertEqual("미낙찰", rows.loc["DEMO-010", "결과 상태"])
+        self.assertEqual("결과 대기", rows.loc["DEMO-007", "결과 상태"])
+        self.assertEqual("미투찰", rows.loc["DEMO-011", "결과 상태"])
+        self.assertEqual("작성중", rows.loc["DEMO-001", "결과 상태"])
+        metrics = {item.label: item.value for item in app.metric}
+        self.assertEqual("3건", metrics["제출완료"])
+        self.assertEqual("1건", metrics["낙찰"])
+        self.assertEqual("1건", metrics["미낙찰"])
+        self.assertEqual("1건", metrics["결과 대기"])
+
+    def test_status_result_filters_and_counts_match_the_visible_records(self):
+        app = self.page("status_page")
+        self.assertEqual(
+            ["전체", "낙찰", "미낙찰", "결과 대기", "작성중", "미투찰"],
+            app.selectbox(key="status_outcome").options,
+        )
+        for outcome, code in [("낙찰", "DEMO-009"), ("미낙찰", "DEMO-010"), ("결과 대기", "DEMO-007")]:
+            app.selectbox(key="status_outcome").set_value(outcome)
+            app.button(key="status_search").click().run()
+            self.assertFalse(app.exception)
+            rows = app.dataframe[0].value
+            self.assertEqual([code], rows["공고번호"].tolist())
+            self.assertEqual([outcome], rows["결과 상태"].tolist())
+            metrics = {item.label: item.value for item in app.metric}
+            self.assertEqual("1건", metrics["조회 공고"])
+            self.assertEqual("1건", metrics[outcome])
+            for other in {"낙찰", "미낙찰", "결과 대기"} - {outcome}:
+                self.assertEqual("0건", metrics[other])
+        app.selectbox(key="status_outcome").set_value("전체")
+        app.text_input(key="status_keyword").set_value("DEMO-011")
+        app.button(key="status_search").click().run()
+        metrics = {item.label: item.value for item in app.metric}
+        self.assertEqual("1건", metrics["조회 공고"])
+        for label in ("제출완료", "낙찰", "미낙찰", "결과 대기"):
+            self.assertEqual("0건", metrics[label])
+
+    def test_status_review_pending_and_later_draft_keep_completed_submission(self):
+        app = self.page("status_page")
+        store = app.session_state["store"]
+        submitted_amount = next(row["amount"] for row in store.submissions() if row["notice_id"] == 9)
+        store.save_submission(dict(notice_id=12, company="가상 제출 참가자", amount=1, status="제출완료", memo=""))
+        store.save_submission(dict(notice_id=9, company="가상 초안 참가자", amount=2, status="작성중", memo=""))
+        app.run()
+        self.assertFalse(app.exception)
+        rows = app.dataframe[0].value.set_index("공고번호")
+        self.assertEqual("결과 대기", rows.loc["DEMO-012", "결과 상태"])
+        self.assertEqual("낙찰", rows.loc["DEMO-009", "결과 상태"])
+        self.assertEqual("제출완료", rows.loc["DEMO-009", "내 투찰상태"])
+        self.assertEqual(submitted_amount, rows.loc["DEMO-009", "최종 제출금액"])
+        metrics = {item.label: item.value for item in app.metric}
+        self.assertEqual("4건", metrics["제출완료"])
+        self.assertEqual("1건", metrics["낙찰"])
+        self.assertEqual("2건", metrics["결과 대기"])
 
 
 if __name__ == "__main__":

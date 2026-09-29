@@ -1,5 +1,6 @@
 import unittest
 
+from demo import services
 from demo.services import api_response, authenticate, recommendation
 
 
@@ -13,7 +14,9 @@ class ServiceTests(unittest.TestCase):
         for scenario in ("샘플 A", "샘플 B", "샘플 C"):
             data = recommendation(scenario)
             self.assertEqual(scenario, data["scenario"])
-            self.assertEqual({"scenario", "label", "amount", "points", "note"}, set(data))
+            self.assertEqual({"scenario", "label", "amount", "points", "note", "bid_rate", "confidence"}, set(data))
+            self.assertGreater(data["bid_rate"], 0)
+            self.assertTrue(0 <= data["confidence"] <= 100)
             self.assertIn("샘플", data["note"])
             self.assertIsInstance(data["amount"], int)
             self.assertTrue(all(set(p) == {"label", "value"} for p in data["points"]))
@@ -21,6 +24,16 @@ class ServiceTests(unittest.TestCase):
             self.assertTrue(recommendation(scenario)["points"])
         with self.assertRaises(ValueError):
             recommendation("실제 분석")
+
+    def test_backtest_is_an_independent_fixed_sample(self):
+        self.assertTrue(hasattr(services, "backtest_sample"))
+        data = services.backtest_sample()
+        self.assertIn("고정 샘플", data["note"])
+        self.assertEqual(4, len(data["rows"]))
+        self.assertEqual({"낙찰", "미낙찰"}, {row["결과"] for row in data["rows"]})
+        self.assertTrue(all(row["공고번호"].startswith("DEMO-BT-") for row in data["rows"]))
+        data["rows"][0]["추천 금액 (원)"] = 1
+        self.assertNotEqual(1, services.backtest_sample()["rows"][0]["추천 금액 (원)"])
 
     def test_api_scenarios_and_payload_copies(self):
         normal = api_response()

@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from demo.data_pages import _upload_panel
-from demo.services import api_response, recommendation
+from demo.services import api_response, backtest_sample, recommendation
 from demo.store import RESULT_OUTCOMES, SUBMISSION_STATUSES
 from demo.ui import csv_bytes as _csv, done, table
 
@@ -30,7 +30,8 @@ def _matches(row, query):
 def _sample_row(notice, scenario):
     sample = recommendation(scenario)
     return dict(notice_id=notice["id"], code=notice["code"], title=notice["title"],
-                scenario=scenario, amount=sample["amount"], note=sample["note"])
+                scenario=scenario, amount=sample["amount"], note=sample["note"],
+                bid_rate=sample["bid_rate"], confidence=sample["confidence"])
 
 
 def _remember(rows):
@@ -57,6 +58,36 @@ def _date_range(rows, prefix, label):
 
 
 def daily_page(store):
+    user_tab, backtest_tab = st.tabs(["사용자용 추천계산", "백테스트"])
+    with user_tab:
+        _daily_recommendations(store)
+    with backtest_tab:
+        st.info(backtest_sample()["note"])
+        if st.button("백테스트 샘플 보기", type="primary", key="backtest_show"):
+            st.session_state["backtest_visible"] = True
+        if st.session_state.get("backtest_visible"):
+            view = backtest_sample()["rows"]
+            won = sum(row["결과"] == "낙찰" for row in view)
+            a, b, c = st.columns(3)
+            a.metric("검증 공고 · 샘플", f"{len(view)}건")
+            b.metric("낙찰 · 샘플", f"{won}건")
+            c.metric("낙찰률 · 샘플", f"{won / len(view):.0%}")
+            _recommendation_table(view)
+            st.download_button("백테스트 샘플 다운로드", _csv(view), "demo-backtest.csv", "text/csv")
+
+
+def _recommendation_table(view):
+    frame = pd.DataFrame(view)
+    styled = frame.style.set_properties(subset=["추천 금액 (원)"],
+                                        **{"background-color": "#fff7cc", "color": "#292824", "font-weight": "700"})
+    st.dataframe(styled, hide_index=True, width="stretch", column_config={
+        "추천 금액 (원)": st.column_config.NumberColumn(format="localized"),
+        "실투찰율 (%)": st.column_config.NumberColumn(format="%.2f%%"),
+        "신뢰도 (%)": st.column_config.NumberColumn(format="%.1f%%"),
+    })
+
+
+def _daily_recommendations(store):
     requested_date = st.session_state.pop("daily_requested_date", None)
     if requested_date is not None:
         if isinstance(requested_date, str):
@@ -127,8 +158,24 @@ def daily_page(store):
                                      [len(rows), len(results), sum(saved.get(row["notice_id"]) == row for row in results)]):
         column.metric(label, f"{count}건")
     view = [{"공고번호": row["code"], "공고명": row["title"], "샘플": row["scenario"], "추천 금액 (원)": row["amount"],
+             "실투찰율 (%)": recommendation(row["scenario"])["bid_rate"],
+             "신뢰도 (%)": recommendation(row["scenario"])["confidence"],
              "저장 상태": "저장 완료" if saved.get(row["notice_id"]) == row else "저장 가능"} for row in results]
-    table(view, list(view[0]))
+    selected = results[0]
+    if len(results) > 1:
+        lookup = {row["notice_id"]: row for row in results}
+        selected_id = st.selectbox("추천 결과 공고", list(lookup), key="daily_result_notice",
+                                   format_func=lambda value: f'{lookup[value]["code"]} · {lookup[value]["title"]}')
+        selected = lookup[selected_id]
+    sample = recommendation(selected["scenario"])
+    a, b, c = st.columns([2, 1, 1])
+    with a:
+        st.markdown(f'<div class="recommendation-amount"><span>추천금액 · 샘플</span>'
+                    f'<strong>{selected["amount"]:,}원</strong></div>', unsafe_allow_html=True)
+    b.metric("실투찰율 · 샘플", f'{sample["bid_rate"]:.2f}%')
+    c.metric("신뢰도 · 샘플", f'{sample["confidence"]:.1f}%')
+    st.caption("금액·실투찰율·신뢰도는 서로 독립적인 가상 표시값이며 실제 계산·평가 결과가 아닙니다.")
+    _recommendation_table(view)
     if st.button("결과 저장", key="daily_save_all"):
         _remember(results)
         done("샘플 결과를 저장했습니다.")
@@ -246,25 +293,36 @@ def status_page(store):
         start, end = _date_range(rows, "status_", "개찰일")
         left, right = st.columns([2, 1])
         keyword = left.text_input("공고명 또는 번호", key="status_keyword")
-        outcome = right.selectbox("결과 상태", ["전체", "결과 미등록", *RESULT_OUTCOMES], key="status_outcome")
+        outcome = right.selectbox("결과 상태", ["전체", "낙찰", "미낙찰", "결과 대기", "작성중", "미투찰"], key="status_outcome")
         st.form_submit_button("조회", type="primary", key="status_search")
     if start > end:
         st.error("종료일은 시작일 이후여야 합니다.")
         return
-    submissions = {row["notice_id"]: row for row in store.submissions()}
+    submissions = {}
+    for submission in store.submissions():
+        previous = submissions.get(submission["notice_id"], {})
+        if submission["status"] == "제출완료" or previous.get("status") != "제출완료":
+            submissions[submission["notice_id"]] = submission
     results = {row["notice_id"]: row for row in store.results()}
-    view = [{"공고번호": row["code"], "공고명": row["title"], "개찰일": row["deadline"],
-             "내 투찰금액": submissions.get(row["id"], {}).get("amount", 0),
-             "내 투찰상태": submissions.get(row["id"], {}).get("status", "미입력"),
-             "결과 상태": results.get(row["id"], {}).get("outcome", "결과 미등록"),
-             "개찰결과 금액": results.get(row["id"], {}).get("amount", 0)}
-            for row in rows if start <= row["deadline"] <= end and _matches(row, keyword)]
+    outcome_labels = {"샘플 낙찰": "낙찰", "샘플 미선정": "미낙찰", "검토중": "결과 대기"}
+    view = []
+    for row in rows:
+        if not (start <= row["deadline"] <= end and _matches(row, keyword)):
+            continue
+        submission = submissions.get(row["id"], {})
+        result = results.get(row["id"], {})
+        status = submission.get("status", "미투찰")
+        result_status = outcome_labels.get(result.get("outcome"), "결과 대기") if status == "제출완료" else status
+        view.append({"공고번호": row["code"], "공고명": row["title"], "개찰일": row["deadline"],
+                     "최종 제출금액": submission.get("amount", 0) if status == "제출완료" else 0, "내 투찰상태": status,
+                     "결과 상태": result_status, "개찰결과 금액": result.get("amount", 0)})
     view = [row for row in view if outcome == "전체" or outcome == row["결과 상태"]]
-    for column, label, count in zip(st.columns(3), ["조회 공고", "투찰 기록", "결과 등록"],
-                                     [len(view), sum(row["내 투찰상태"] != "미입력" for row in view),
-                                      sum(row["결과 상태"] != "결과 미등록" for row in view)]):
+    counts = [len(view), sum(row["내 투찰상태"] == "제출완료" for row in view)]
+    counts.extend(sum(row["결과 상태"] == result for row in view) for result in ("낙찰", "미낙찰", "결과 대기"))
+    for column, label, count in zip(st.columns(5), ["조회 공고", "제출완료", "낙찰", "미낙찰", "결과 대기"], counts):
         column.metric(label, f"{count}건")
-    columns = ["공고번호", "공고명", "개찰일", "내 투찰금액", "내 투찰상태", "결과 상태", "개찰결과 금액"]
+    st.caption("완료한 투찰 기록을 기준으로 낙찰 결과를 표시합니다.")
+    columns = ["공고번호", "공고명", "개찰일", "최종 제출금액", "내 투찰상태", "결과 상태", "개찰결과 금액"]
     table(view, columns)
     if view:
         st.download_button("투찰현황 다운로드", _csv(view), "demo-bid-status.csv", "text/csv")

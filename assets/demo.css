@@ -1145,3 +1145,13 @@ div[class*="st-key-workspace_tab_"] div[class*="st-key-tab_close_"] button {
 }
 
 .demo-badge { display:inline-block; margin-left:.35rem; font-size:.5rem; letter-spacing:.08em; opacity:.7; }
+
+.recommendation-amount {
+  background: #fff7cc;
+  color: #292824;
+  border: 1px solid #dcc66b;
+  border-radius: 12px;
+  padding: 14px 18px;
+}
+.recommendation-amount span { display: block; font-size: 0.9rem; }
+.recommendation-amount strong { display: block; font-size: 1.8rem; font-weight: 800; }
