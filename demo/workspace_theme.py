@@ -299,7 +299,8 @@ __SCOPE__ .st-key-workspace_home :is(.st-key-home_open_daily_recommend, .st-key-
   __SCOPE__ [data-testid="stAppViewContainer"]:has(.st-key-workspace_home)::after { animation: none; display: none; }
   __SCOPE__ [data-testid="stMainBlockContainer"] { width: calc(100% - 20px); margin: 64px auto 12px; }
   __SCOPE__ .st-key-workspace_surface, __SCOPE__ .st-key-workspace_qa_surface { padding: 16px 12px; }
-  __SCOPE__ [data-testid="stSidebar"] { background-color: #111; margin: 58px 0 0; height: calc(100svh - 58px); }
+  __SCOPE__ [data-testid="stSidebar"] { background: #111; margin: 58px 0 0; height: calc(100svh - 58px); }
+  __SCOPE__ [data-testid="stHeader"] { background: #111; }
   __SCOPE__ :is(input, textarea, select) { font-size: 16px; }
 }
 @media (max-width: 480px) {
@@ -401,7 +402,8 @@ __LIGHT__ .st-key-workspace_home :is(.st-key-home_open_daily_recommend, .st-key-
   outline: 2px solid #2f6f96;
 }
 @media (max-width: 768px) {
-  __LIGHT__ [data-testid="stSidebar"] { background-color: transparent; }
+  __LIGHT__ [data-testid="stSidebar"] { background: #ffffff; }
+  __LIGHT__ [data-testid="stHeader"] { background: #ffffff; }
 }
 @media (max-width: 768px), (pointer: coarse) {
   __LIGHT__ [data-testid="stAppViewContainer"]::before {

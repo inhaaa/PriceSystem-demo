@@ -23,6 +23,17 @@ def contrast_ratio(first, second):
 
 
 class VisualStructureTests(unittest.TestCase):
+    def test_mobile_sidebar_and_header_have_opaque_backgrounds(self):
+        theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
+        mobile = theme.split('@media (max-width: 768px) {')
+        for scope, color in (("__SCOPE__", "#111"), ("__LIGHT__", "#ffffff")):
+            for surface in ("stSidebar", "stHeader"):
+                rule = re.escape(scope + ' [data-testid="' + surface + '"]')
+                matches = [re.search(rule + r'\s*\{([^}]+)\}', block) for block in mobile[1:]]
+                styles = [match.group(1) for match in matches if match]
+                self.assertTrue(any(f"background: {color};" in style for style in styles),
+                                f"{scope} {surface} must cover content underneath on mobile")
+
     def test_primary_and_disabled_buttons_have_readable_text_in_both_themes(self):
         css = (ROOT / "assets/demo.css").read_text(encoding="utf-8")
         theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
