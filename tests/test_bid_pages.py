@@ -2,6 +2,7 @@
 from pathlib import Path
 from datetime import date
 import unittest
+import json
 
 from streamlit.testing.v1 import AppTest
 
@@ -32,6 +33,22 @@ class BidPageJourneys(unittest.TestCase):
         self.apps.append(app)
         self.assertFalse(app.exception)
         return app
+
+    def test_money_formats_cover_recommendation_and_editable_tables(self):
+        for page in ('daily_page', 'management_page', 'status_page', 'results_page'):
+            with self.subTest(page=page):
+                app = self.page(page)
+                if page == 'daily_page':
+                    app.button(key='daily_search').click().run()
+                    app.button(key='backtest_show').click().run()
+                for grid in app.dataframe:
+                    columns = json.loads(grid.proto.columns)
+                    for name in grid.value.columns:
+                        if '금액' in name:
+                            self.assertEqual(columns.get(name, {}).get('type_config', {}).get('format'), 'localized', name)
+        app = self.page('management_page')
+        app.number_input(key='submission_None_amount').set_value(12345678).run()
+        self.assertIn('12,345,678원', [item.value for item in app.caption])
 
     def test_all_screens_render_with_seed_and_empty_store(self):
         for name in PAGES:

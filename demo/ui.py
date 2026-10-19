@@ -95,14 +95,17 @@ LABELS = {
 }
 
 
+def money_columns(columns):
+    return {name: st.column_config.NumberColumn(format="localized")
+            for name in columns if "금액" in name}
+
+
 def table(rows, columns, height="auto"):
     if not rows:
         st.info("표시할 데이터가 없습니다. 검색 조건을 바꾸거나 새 항목을 등록해 보세요.")
         return
     frame = pd.DataFrame(rows).reindex(columns=columns).rename(columns=LABELS)
-    money = {LABELS[key]: st.column_config.NumberColumn(format="localized")
-             for key in ["base_amount", "amount"] if key in columns}
-    st.dataframe(frame, hide_index=True, width="stretch", height=height, column_config=money)
+    st.dataframe(frame, hide_index=True, width="stretch", height=height, column_config=money_columns(frame.columns))
 
 
 def done(message):

@@ -1,6 +1,7 @@
 """자료 등록·조회와 개찰일별 공고관리의 가상 세션 회귀 확인."""
 import csv
 import io
+import json
 import unittest
 from datetime import date, timedelta
 from unittest.mock import patch
@@ -30,6 +31,12 @@ class DataPageJourneys(unittest.TestCase):
         self.addCleanup(lambda: app.session_state['store'].close() if 'store' in app.session_state else None)
         self.assertFalse(app.exception)
         return app
+
+    def test_daily_notice_money_column_has_grouping(self):
+        app = self.page('daily_notices')
+        app.button(key='daily_notices_search').click().run()
+        columns = json.loads(app.dataframe[0].proto.columns)
+        self.assertEqual(columns.get('기초금액', {}).get('type_config', {}).get('format'), 'localized')
 
     def new_store(self):
         store = DemoStore()

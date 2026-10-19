@@ -1,6 +1,7 @@
 """Visual structure and local-only dependencies for the restored demo shell."""
 from pathlib import Path
 import re
+import json
 import unittest
 from urllib.parse import urljoin
 
@@ -23,6 +24,23 @@ def contrast_ratio(first, second):
 
 
 class VisualStructureTests(unittest.TestCase):
+    def test_money_tables_format_korean_columns_without_converting_values(self):
+        app = AppTest.from_string(
+            "from demo.ui import table\n"
+            "rows = [{'base_amount': 1000, '추천 투찰금액': 25000000, '1순위투찰금액': None, '번호': 1000}, "
+            "{'base_amount': 0, '추천 투찰금액': 999, '1순위투찰금액': 1000000000000, '번호': 2}]\n"
+            "table(rows, list(rows[0]))"
+        ).run()
+        self.assertFalse(app.exception)
+        grid = app.dataframe[0]
+        columns = json.loads(grid.proto.columns)
+        for name in ('기초금액 (원)', '추천 투찰금액', '1순위투찰금액'):
+            self.assertEqual(columns.get(name, {}).get('type_config', {}).get('format'), 'localized', name)
+        self.assertNotIn('번호', columns)
+        self.assertEqual(grid.value['추천 투찰금액'].tolist(), [25000000, 999])
+        self.assertEqual(grid.value['기초금액 (원)'].tolist(), [1000, 0])
+        self.assertTrue(grid.value['1순위투찰금액'].isna().iloc[0])
+
     def test_mobile_sidebar_and_header_have_opaque_backgrounds(self):
         theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
         mobile = theme.split('@media (max-width: 768px) {')

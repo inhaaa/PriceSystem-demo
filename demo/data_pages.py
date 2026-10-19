@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from demo.ui import csv_bytes, done, table
+from demo.ui import csv_bytes, done, money_columns, table
 from demo.workspace import open_tab
 
 
@@ -299,6 +299,7 @@ def daily_notices(store):
                 "계산 이력": "저장된 계산 있음" if row["id"] in saved else "미저장 계산 있음" if row["id"] in unsaved else "없음",
                 "투찰기록": "있음" if row["id"] in submissions else "없음"} for row in rows]
     edited = st.data_editor(display, hide_index=True, width="stretch", disabled=[key for key in display[0] if key != "선택"],
+                            column_config=money_columns(display[0]),
                             key=f"daily_notices_editor_{st.session_state.get('daily_notices_revision', 0)}_{select_all}")
     targets = tuple(row["id"] for row, edit in zip(rows, edited) if edit["선택"])
     if st.session_state.get("daily_notices_pending") != targets:

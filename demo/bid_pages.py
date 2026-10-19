@@ -7,7 +7,7 @@ import streamlit as st
 from demo.data_pages import _upload_panel
 from demo.services import api_response, backtest_sample, recommendation
 from demo.store import RESULT_OUTCOMES, SUBMISSION_STATUSES
-from demo.ui import csv_bytes as _csv, done, table
+from demo.ui import csv_bytes as _csv, done, money_columns, table
 
 
 NOTICE_COLUMNS = ["code", "title", "agency", "category", "region", "base_amount", "deadline", "status"]
@@ -81,7 +81,7 @@ def _recommendation_table(view):
     styled = frame.style.set_properties(subset=["추천 금액 (원)"],
                                         **{"background-color": "#fff7cc", "color": "#292824", "font-weight": "700"})
     st.dataframe(styled, hide_index=True, width="stretch", column_config={
-        "추천 금액 (원)": st.column_config.NumberColumn(format="localized"),
+        **money_columns(frame.columns),
         "실투찰율 (%)": st.column_config.NumberColumn(format="%.2f%%"),
         "신뢰도 (%)": st.column_config.NumberColumn(format="%.1f%%"),
     })
@@ -131,7 +131,7 @@ def _daily_recommendations(store):
                                "기초금액": row["base_amount"], "개찰일": row["deadline"]} for row in rows])
     editor = st.data_editor(selection, hide_index=True, width="stretch",
                             disabled=[column for column in selection.columns if column != "선택"],
-                            column_config={"id": None, "선택": st.column_config.CheckboxColumn()},
+                            column_config={**money_columns(selection.columns), "id": None, "선택": st.column_config.CheckboxColumn()},
                             key=f"daily_editor_{st.session_state.get('daily_query_revision', 0)}_{all_selected}")
     selected_ids = tuple(int(value) for value in editor.loc[editor["선택"], "id"])
     selected_rows = [row for row in rows if row["id"] in selected_ids]
@@ -226,7 +226,8 @@ def management_page(store):
         editable = ["내 투찰금액", "내 투찰상태", "메모"]
         edited = st.data_editor(pd.DataFrame(baseline), hide_index=True, width="stretch",
                                 disabled=[key for key in baseline[0] if key not in editable],
-                                column_config={"id": None, "내 투찰금액": st.column_config.NumberColumn(min_value=0, max_value=10**12, step=1),
+                                column_config={**money_columns(baseline[0]), "id": None,
+                                               "내 투찰금액": st.column_config.NumberColumn(min_value=0, max_value=10**12, step=1, format="localized"),
                                                "내 투찰상태": st.column_config.SelectboxColumn(options=list(SUBMISSION_STATUSES), required=True)},
                                 key=f"management_editor_{st.session_state.get('management_revision', 0)}")
         selected = _notice_choice("선택 저장 공고", filtered, "management_selected")
@@ -265,6 +266,7 @@ def management_page(store):
             st.session_state.setdefault(prefix + "company", item.get("company", st.session_state.get("demo_company", "가상 데모회사")))
             company = a.text_input("가상 회사명", key=prefix + "company")
             amount = b.number_input("투찰 금액 (원)", min_value=0, max_value=10**12, value=item.get("amount", 0), key=prefix + "amount")
+            b.caption(f"{amount:,}원")
             status = st.selectbox("투찰 상태", list(SUBMISSION_STATUSES), index=list(SUBMISSION_STATUSES).index(item.get("status", "작성중")), key=prefix + "status")
             memo = st.text_input("투찰 메모", item.get("memo", ""), key=prefix + "memo")
             submit = st.button("투찰 저장", type="primary", key="save_submission")
@@ -396,6 +398,7 @@ def results_page(store):
         prefix = f"result_{selected}_"
         with st.form(prefix + "form"):
             amount = st.number_input("결과 금액 (원)", min_value=0, max_value=10**12, value=item.get("amount", 0), key=prefix + "amount")
+            st.caption(f"{amount:,}원")
             outcome = st.selectbox("샘플 결과", list(RESULT_OUTCOMES), index=list(RESULT_OUTCOMES).index(item.get("outcome", "검토중")), key=prefix + "outcome")
             note = st.text_input("결과 메모", item.get("note", ""), key=prefix + "note")
             save = st.form_submit_button("결과 저장", type="primary", key="save_result")
