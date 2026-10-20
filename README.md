@@ -10,7 +10,7 @@
 
 **Python · Streamlit · pandas · SQLite**
 
-### [설치 없이 데모 체험하기 →](https://pricesystem-demo.streamlit.app/)
+### [설치 없이 데모 체험하기 →](https://demo.inhaaa.com/)
 
 체험 계정: `admin` / `admin`
 
@@ -95,7 +95,9 @@ PriceSystem은 공고와 관련 자료를 등록하고, 분석 화면을 거쳐 
 
 ## 데모 체험
 
-[온라인 데모 열기](https://pricesystem-demo.streamlit.app/)를 눌러 아래 계정으로 로그인하세요. 브라우저에서 설치 없이 체험할 수 있으며, 별도의 회원가입, API 키, 외부 DB는 필요하지 않습니다. 직접 실행하려면 [빠른 시작](#빠른-시작)을 참고하세요.
+[온라인 데모 열기](https://demo.inhaaa.com/)를 눌러 아래 계정으로 로그인하세요. 브라우저에서 설치 없이 체험할 수 있으며, 별도의 회원가입, API 키, 외부 DB는 필요하지 않습니다. 직접 실행하려면 [빠른 시작](#빠른-시작)을 참고하세요.
+
+현재 대표 데모는 Hostinger VPS에서 독립적으로 실행합니다. 기존 [Streamlit Cloud 데모](https://pricesystem-demo.streamlit.app/)는 전환 확인용으로 유지하며, 중지·삭제는 별도 승인 후 진행합니다.
 
 | 아이디 | 비밀번호 | 저장 방식 |
 | :---: | :---: | --- |
@@ -174,11 +176,11 @@ python3 -m venv .venv
 .venv/bin/python -m streamlit run app.py
 ```
 
-터미널에 표시되는 로컬 주소를 브라우저에서 열고 `admin` / `admin`으로 로그인합니다. 설치 없이 둘러보려면 [온라인 데모](https://pricesystem-demo.streamlit.app/)를 이용하세요.
+터미널에 표시되는 로컬 주소를 브라우저에서 열고 `admin` / `admin`으로 로그인합니다. 설치 없이 둘러보려면 [온라인 데모](https://demo.inhaaa.com/)를 이용하세요.
 
 ### VPS 독립 배포
 
-Docker와 Caddy로 `https://demo.inhaaa.com`에 배포하는 구성 및 Hostinger Webconsole 명령은 [VPS 배포 안내](docs/DEPLOYMENT.md)에 정리했습니다. 별도 Compose 프로젝트 `pricesys-demo`가 `127.0.0.1:8502`만 사용하며, 데이터는 기존과 동일하게 세션 메모리에 저장합니다. 신규 주소의 배포와 기능 검증이 끝날 때까지 기존 Streamlit Cloud 주소를 유지합니다.
+Docker와 Caddy로 `https://demo.inhaaa.com`에 배포한 구성 및 Hostinger Webconsole 명령은 [VPS 배포 안내](docs/DEPLOYMENT.md)에 정리했습니다. 별도 Compose 프로젝트 `pricesys-demo`가 `127.0.0.1:8502`만 사용하며, 데이터는 기존과 동일하게 세션 메모리에 저장합니다.
 
 ### 테스트 실행
 

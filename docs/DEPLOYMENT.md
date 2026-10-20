@@ -93,87 +93,47 @@ docker port pricesys-demo
 
 `unless-stopped` 설정으로 수동 정지하지 않은 컨테이너는 Docker 시작 시 복구된다. Docker 자동 시작이 `enabled`가 아니면 기존 운영 영향을 확인한 후 별도로 설정한다. 이 작업에서 실제 VPS 재부팅은 실행하지 않는다. `unhealthy` 상태만으로 자동 재시작되지는 않으며, 프로세스 종료에 따른 재시작 정책과 구분한다.
 
-## 4. Caddy 후보 작성·검증
+## 4. Caddy 후보 임시 적용·검증·영구 저장
 
-`deploy/Caddyfile.demo.example`은 실제 bind 확인 전에는 적용할 수 없는 예시다. 기존에 같은 도메인이 이미 정의되어 있으면 중복 추가하지 말고 해당 블록을 먼저 검토한다. 기존 글로벌 옵션이 자동 HTTPS를 끄거나 인증서를 별도로 관리한다면 현행 방식에 맞춰 신규 호스트만 추가한다.
+아래는 신규 도메인을 처음 추가할 때의 절차다. **현재 배포는 영구 저장까지 완료됐으므로 다시 실행하지 않는다.** 앱 재배포는 6절을 따른다. 기존 5개 HTTP/HTTPS `bind`가 모두 같고 외부 `import`가 없는 구성을 Webconsole에서 확인했다. 신규 두 블록도 같은 bind를 사용한다. [bind 공식 설명](https://caddyserver.com/docs/caddyfile/directives/bind)
 
-Caddy는 동일 포트에서 bind 유무나 주소를 혼용하면 다른 리스너가 요청을 받을 수 있다. 공개 포트폴리오의 검증된 bind 주소 목록을 확인한 뒤 신규 블록에도 일관되게 적용한다. [bind 공식 설명](https://caddyserver.com/docs/caddyfile/directives/bind)을 참고한다.
-
-### Webconsole에서 후보 자동 생성
-
-기존 모든 명시적 `bind`가 동일하고 외부 `import`가 없는 현재 구성에서는 다음 도구를 사용할 수 있다. 먼저 이 도구가 포함된 배포 브랜치를 받는다. 실행 중인 컨테이너는 소스 업데이트만으로 바뀌지 않는다.
+### 후보 생성과 검증
 
 ```bash
 git -C /srv/pricesys-demo pull --ff-only origin codex/vps-demo-deployment
 python3 /srv/pricesys-demo/deploy/prepare_caddy.py
-caddy validate --config /etc/caddy/Caddyfile.demo-candidate --adapter caddyfile
-diff -u /etc/caddy/Caddyfile /etc/caddy/Caddyfile.demo-candidate
+cd /srv/pricesys-demo
+CADDY_LIVE=/etc/caddy/Caddyfile
+CADDY_BACKUP="$(cat .local/deploy/caddy-backup-path)"
+CADDY_CANDIDATE=/etc/caddy/Caddyfile.demo-candidate
+test -r "$CADDY_BACKUP" && test -s "$CADDY_BACKUP" && test -r "$CADDY_CANDIDATE" && test -s "$CADDY_CANDIDATE"
+stat -c '%a %n' "$CADDY_BACKUP" "$CADDY_CANDIDATE"
+caddy validate --config "$CADDY_CANDIDATE" --adapter caddyfile
+diff -u "$CADDY_LIVE" "$CADDY_CANDIDATE"
 ```
 
-도구는 현재 파일의 내용을 그대로 백업하고 신규 블록만 붙인 후보를 만든다. 백업과 후보는 권한 600으로 생성한다. 실제 bind·인증 해시는 화면에 출력하지 않는다. 기존 도메인 설정, 다른 bind, import, 기존 후보·백업 기록이 있으면 덮어쓰지 않고 중단한다. 실패해도 실제 Caddyfile을 수정하거나 서비스를 reload하지 않는다. 일부 준비 파일이 남으면 삭제하지 말고 오류를 확인한다.
+도구는 원본 전체의 백업과 신규 HTTP/HTTPS 블록만 추가한 후보를 권한 `600`으로 만든다. 기존 데모 설정·후보·백업 기록, 다른 bind, import가 있으면 중단하며 원본이나 실행 중 설정을 바꾸지 않는다. 준비 파일이 남아도 삭제·덮어쓰기하지 말고 원인을 확인한다. 실제 bind와 인증 해시가 있는 파일은 서버에만 보관한다.
 
-이 방법을 사용했다면 아래 **수동 후보 생성** 부분은 건너뛰고 후보 검증과 비교를 확인한 후 **후보 반영**으로 진행한다. diff에는 신규 데모 블록 추가만 있어야 한다. `diff`는 차이가 있으면 종료 코드 1을 반환하므로 출력 내용으로 판단한다.
+`Valid configuration`, 두 파일의 `600`, diff의 **신규 데모 블록 추가만** 확인한 후 계속한다. `diff`의 종료 코드 1은 차이가 있다는 뜻이므로 출력으로 판단한다. 실제 생성된 백업은 `/etc/caddy/Caddyfile.before-demo.20261020T041656190872Z`다. 글로벌 옵션·환경변수·인증서 관리 방식이 바뀌면 현재 서비스와 같은 환경에서 후보를 다시 검토한다.
 
-### 수동 후보 생성
+### 원본을 유지한 채 후보 임시 적용
 
-먼저 전체 파일을 백업하고 후보를 만든다. 이 파일들에는 기존 인증 해시가 있으므로 서버에만 보관한다.
+원본이 백업과 같은지 확인하고 후보를 런타임에 먼저 적용한다. 이때 원본 파일은 아직 변경되지 않는다.
 
 ```bash
 cd /srv/pricesys-demo
-umask 077
-CADDY_BACKUP="/etc/caddy/Caddyfile.before-demo.$(date -u +%Y%m%dT%H%M%SZ)"
-cp -pL /etc/caddy/Caddyfile "$CADDY_BACKUP"
-printf '%s\n' "$CADDY_BACKUP" > .local/deploy/caddy-backup-path
-cp -pL /etc/caddy/Caddyfile /etc/caddy/Caddyfile.demo-candidate
-chmod 600 "$CADDY_BACKUP" /etc/caddy/Caddyfile.demo-candidate
-cp deploy/Caddyfile.demo.example .local/deploy/Caddyfile.demo
-nano .local/deploy/Caddyfile.demo
-```
-
-편집기에서 `__CONFIRMED_BIND_ADDRESSES__` 두 곳을 **확인한 실제 bind 주소 목록**으로 바꾼다. 현재 서버처럼 HTTP/HTTPS를 명시하는 구성을 예시에 반영했다. 다른 사이트의 설정은 수정하지 않는다. 자리표시자가 남으면 아래 명령은 추가를 거부한다.
-
-```bash
-if grep -q '__CONFIRMED_BIND_ADDRESSES__' .local/deploy/Caddyfile.demo; then
-  printf '%s\n' '실제 bind 주소를 먼저 입력하세요.'
-else
-  printf '\n' >> /etc/caddy/Caddyfile.demo-candidate
-  cat .local/deploy/Caddyfile.demo >> /etc/caddy/Caddyfile.demo-candidate
-  caddy validate --config /etc/caddy/Caddyfile.demo-candidate --adapter caddyfile
-fi
+CADDY_LIVE=/etc/caddy/Caddyfile
 CADDY_BACKUP="$(cat .local/deploy/caddy-backup-path)"
-diff -u "$CADDY_BACKUP" /etc/caddy/Caddyfile.demo-candidate
-```
-
-후보 생성은 한 번만 한다. 재시도할 때는 백업에서 후보를 다시 만들고 신규 블록이 중복되지 않았는지 확인한다. `diff`에 **신규 데모 블록 추가만** 있어야 한다. 상대 경로 import가 있으면 후보도 `/etc/caddy`에서 검증되도록 기존 파일과 같은 실행 디렉터리를 사용한다. 환경변수 치환이 있다면 실제 Caddy 서비스와 같은 환경에서도 유효해야 한다.
-
-### 후보 반영
-
-`Valid configuration`과 diff를 직접 확인한 뒤 아래를 실행한다. 후보·백업의 크기와 읽기 권한을 검사하고, 원본이 백업 후 바뀌지 않았는지도 확인한다. 검증한 후보를 새 임시 파일에 완전히 복사한 뒤 원본의 소유자·권한을 적용하고 같은 디렉터리 안에서 교체한다. Caddyfile이 심볼릭 링크라면 대상 파일에 반영하여 링크를 유지한다.
-
-```bash
-CADDY_BACKUP="$(cat .local/deploy/caddy-backup-path)"
-CADDY_TARGET="$(readlink -f /etc/caddy/Caddyfile)"
-test -r "$CADDY_BACKUP" && test -s "$CADDY_BACKUP" && test -r /etc/caddy/Caddyfile.demo-candidate && test -s /etc/caddy/Caddyfile.demo-candidate
-cmp -s "$CADDY_BACKUP" "$CADDY_TARGET"
-caddy validate --config /etc/caddy/Caddyfile.demo-candidate --adapter caddyfile
-```
-
-상기 명령이 모두 성공해야 아래 교체를 수행한다. `cmp`가 실패하면 다른 변경이 있는 것이므로 멈추고 비교한다.
-
-```bash
-if test -s "$CADDY_BACKUP" && test -s /etc/caddy/Caddyfile.demo-candidate && cmp -s "$CADDY_BACKUP" "$CADDY_TARGET" && cp /etc/caddy/Caddyfile.demo-candidate "${CADDY_TARGET}.demo-new" && chown --reference="$CADDY_TARGET" "${CADDY_TARGET}.demo-new" && chmod --reference="$CADDY_TARGET" "${CADDY_TARGET}.demo-new" && mv -T "${CADDY_TARGET}.demo-new" "$CADDY_TARGET" && caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && systemctl reload caddy; then
+CADDY_CANDIDATE=/etc/caddy/Caddyfile.demo-candidate
+if test -r "$CADDY_BACKUP" && test -s "$CADDY_BACKUP" && test -r "$CADDY_CANDIDATE" && test -s "$CADDY_CANDIDATE" && cmp -s "$CADDY_BACKUP" "$CADDY_LIVE" && caddy validate --config "$CADDY_CANDIDATE" --adapter caddyfile && caddy reload --config "$CADDY_CANDIDATE" --adapter caddyfile; then
   systemctl is-active caddy
 else
-  printf '%s\n' '적용 실패: 새 reload를 반복하지 말고 백업과 현재 파일을 비교한 뒤 아래 Caddy 복구 절차를 실행하세요.'
+  printf '%s\n' '임시 적용 실패: 원본·백업·로그를 확인하고 reload를 반복하지 마세요.'
 fi
 journalctl -u caddy --since '-5 minutes' --no-pager -n 80
 ```
 
-일반적인 Caddy 설정에서 호스트 이름 사이트는 자동 HTTPS와 HTTP 리디렉션을 사용한다. 현재 서버의 글로벌 옵션과 방화벽 80/443·인증서 발급 로그를 함께 확인한다. 데모 블록에는 Caddy Basic Auth를 추가하지 않으며, 앱의 공개 `admin/admin` 로그인은 유지한다. 기존 Basic Auth·리디렉션·SSL·프록시는 그대로 둔다.
-
-`reverse_proxy`는 WebSocket 업그레이드를 기본 지원하므로 CORS/XSRF 보호를 끄거나 수동 Upgrade 헤더를 추가하지 않는다. 다만 **Caddy reload 때 기존 WebSocket이 재연결될 수 있다.** 운영 사용량이 낮을 때 반영하고 사용 중 세션 영향이 전혀 없다고 단정하지 않는다. [Caddy WebSocket 동작](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#streaming)
-
-## 5. 신규·기존 서비스 검증
+실패하면 멈춘다. 임시 적용 후에는 아래 응답과 운영 컨테이너를 비교하고, 브라우저에서 로그인 및 가상 카테고리 생성 → 메뉴 이동 후 재조회 → 수정 → 삭제를 확인한다. 기존 사이트에 문제가 있으면 7절의 Caddy 복구 절차를 따른다. **영구 저장 전에는 Caddy 재시작·원본 기준 reload·VPS 재부팅을 하지 않는다.**
 
 ```bash
 curl -sS -I --max-time 15 http://demo.inhaaa.com
@@ -187,9 +147,33 @@ cat .local/deploy/production-before.txt
 docker inspect --format '{{.State.Health.Status}} {{.HostConfig.RestartPolicy.Name}} {{json .HostConfig.PortBindings}}' pricesys-demo
 ```
 
-기대 결과는 demo HTTP에서 같은 호스트의 HTTPS로 리디렉션, demo HTTPS/health에서 200/`ok`, pricesys에서 미인증 401과 Basic realm, inhaaa에서 200, www에서 inhaaa로 301이다. 운영 컨테이너 ID·시작 시각이 사전 기록과 같은지도 확인한다. `curl -k`로 인증서 오류를 무시하고 통과로 처리하지 않는다.
+기대 결과는 demo HTTP에서 같은 호스트의 HTTPS로 리디렉션, demo HTTPS/health에서 200/`ok`, pricesys에서 미인증 401과 Basic realm, inhaaa에서 200, www에서 inhaaa로 301이다. 운영 컨테이너 ID·상태·시작 시각도 사전 기록과 같아야 한다. `curl -k`로 인증서 오류를 무시하고 통과로 처리하지 않는다.
 
-PC와 스마트폰 브라우저에서 다음을 확인한다. HTTP 200이나 health 응답만으로 기능 검증을 완료하지 않는다.
+### 검증한 후보를 원본에 영구 저장
+
+위 응답·운영 컨테이너 비교와 브라우저 기본 CRUD가 통과한 후 실행한다. `--attributes-only`는 후보 내용을 유지하면서 원본의 소유자·권한만 적용한다. 같은 파일시스템·UID·GID·권한인지 확인하고, 원본이 여전히 백업과 같을 때만 `mv -T`로 교체한다. `readlink -f`로 실제 대상에 반영하므로 원본의 심볼릭 링크도 유지한다. **원본 파일에 `cat ... > /etc/caddy/Caddyfile`로 직접 쓰지 않는다.**
+
+```bash
+cd /srv/pricesys-demo
+CADDY_LIVE=/etc/caddy/Caddyfile
+CADDY_BACKUP="$(cat .local/deploy/caddy-backup-path)"
+CADDY_CANDIDATE=/etc/caddy/Caddyfile.demo-candidate
+CADDY_TARGET="$(readlink -f "$CADDY_LIVE")"
+if test -n "$CADDY_TARGET" && test -r "$CADDY_BACKUP" && test -s "$CADDY_BACKUP" && test -r "$CADDY_CANDIDATE" && test -s "$CADDY_CANDIDATE" && cmp -s "$CADDY_BACKUP" "$CADDY_LIVE" && cp -Lv --attributes-only --preserve=mode,ownership "$CADDY_LIVE" "$CADDY_CANDIDATE" && stat -Lc '%d:%u:%g:%a %n' "$CADDY_LIVE" "$CADDY_CANDIDATE" && test "$(stat -Lc '%d:%u:%g:%a' "$CADDY_LIVE")" = "$(stat -Lc '%d:%u:%g:%a' "$CADDY_CANDIDATE")" && cmp -s "$CADDY_BACKUP" "$CADDY_LIVE" && mv -vT "$CADDY_CANDIDATE" "$CADDY_TARGET"; then
+  caddy validate --config "$CADDY_LIVE" --adapter caddyfile
+else
+  printf '%s\n' '저장 조건 미충족: 후보 유무와 원본 차이를 확인하고 복구를 자동 실행하지 마세요.'
+fi
+diff -u "$CADDY_BACKUP" "$CADDY_LIVE"
+```
+
+최종 `Valid configuration`과 백업 대비 차이가 신규 데모 블록뿐인지 확인한다. 검증한 후보가 이미 런타임에 적용됐으므로 **추가 reload는 필요 없다.** 성공한 `mv` 뒤에는 후보 파일이 없어진다. 재실행 시 후보의 `stat`가 missing이어도 그것만으로 실패는 아니다. 원본 검증·차이·HTTPS 응답으로 저장 완료 여부를 판단하며, 무조건 백업을 복원하지 않는다.
+
+데모에는 Caddy Basic Auth를 추가하지 않고 공개 `admin/admin` 로그인을 유지한다. 기존 인증·리디렉션·SSL·프록시는 그대로 둔다. `reverse_proxy`는 WebSocket을 기본 지원하므로 CORS/XSRF 보호나 Upgrade 헤더를 변경하지 않는다. reload 때 기존 WebSocket이 재연결될 수 있으므로 운영 사용량이 낮을 때 적용한다. [Caddy WebSocket 동작](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#streaming)
+
+## 5. 추가 기능·재시작 검증
+
+영구 저장 후 PC와 스마트폰에서 다음을 확인한다. HTTP 200과 기본 CRUD만으로 전체 기능 검증을 완료하지 않는다.
 
 - 주소창이 `demo.inhaaa.com`으로 유지되고 유효한 인증서가 표시되며 Streamlit Cloud로 이동하지 않는다.
 - `admin/admin` 로그인, 홈, 10개 메뉴, 자료 등록→재조회, 투찰·결과 등록/수정/삭제, 추천/백테스트/API의 고정 샘플을 확인한다.
@@ -205,12 +189,17 @@ DEMO_IMAGE="$(docker inspect --format '{{.Config.Image}}' pricesys-demo)" docker
 curl -fsS https://demo.inhaaa.com/_stcore/health
 ```
 
-모두 통과한 뒤 검증된 이미지와 Compose를 기록한다.
+검증한 이미지와 Compose를 기록한다. `current-commit`에는 현재 소스 HEAD가 아니라 **이미지 태그의 빌드 원본 커밋**을 저장한다. 현재 이미지의 원본은 `c0d96b5`이고, 후보 생성 도구를 받은 소스 HEAD는 `9f0cba8`이다. 두 커밋 사이에 앱 코드 변경은 없다.
 
 ```bash
-docker inspect --format '{{.Config.Image}}' pricesys-demo > .local/deploy/current-image
+CURRENT_IMAGE="$(docker inspect --format '{{.Config.Image}}' pricesys-demo)"
+IMAGE_REVISION="${CURRENT_IMAGE##*:}"
+IMAGE_COMMIT="$(git rev-parse "${IMAGE_REVISION%%-*}^{commit}")"
+test -n "$CURRENT_IMAGE" && test -n "$IMAGE_COMMIT"
+printf '%s\n' "$CURRENT_IMAGE" > .local/deploy/current-image
 cp compose.yaml .local/deploy/verified-compose.yaml
-git rev-parse HEAD > .local/deploy/current-commit
+printf '%s\n' "$IMAGE_COMMIT" > .local/deploy/current-commit
+docker inspect --format '{{.Name}} {{.Id}} {{.State.Status}} {{.State.StartedAt}}' pricesys-demo pricesys-app-1 > .local/deploy/containers-verified.txt
 ```
 
 ## 6. 소스 수정 후 재배포
@@ -285,24 +274,42 @@ journalctl -u caddy --since '-15 minutes' --no-pager -n 100
 
 운영 `.env`, `secrets.toml`, DB 파일, Docker 소켓, 운영 경로를 이 컨테이너에 전달하거나 마운트하지 않는다. 향후 API 키/외부 DB/영속화 요구가 생기면 지금의 공개 세션 격리 계약과 달라지므로 별도 설계한다. 신규 실행 파일이나 자산을 추가하면 `.dockerignore`와 `PUBLIC_FILES.txt`도 함께 검토한다.
 
-신규 도메인의 접속·기능·기존 서비스 검증이 끝난 후 README의 대표 데모 링크를 전환한다. 기존 Streamlit Cloud 앱 중지/삭제는 별도로 사용자 승인을 받은 후 수행한다.
+신규 도메인의 접속·주요 기능·기존 서비스 검증 후 README의 대표 데모 링크를 신규 주소로 전환했다. 기존 Streamlit Cloud 앱 중지/삭제는 별도로 사용자 승인을 받은 후 수행한다.
 
-## 실제 확인과 남은 작업 (2026-10-20)
+## 생성·수정한 파일
+
+| 구분 | 파일 |
+| --- | --- |
+| 신규 배포 구성 | `Dockerfile`, `.dockerignore`, `compose.yaml` |
+| 신규 Caddy 도구·예시 | `deploy/prepare_caddy.py`, `deploy/Caddyfile.demo.example` |
+| 신규 문서·테스트 | `docs/DEPLOYMENT.md`, `tests/test_deployment.py`, `tests/test_caddy_candidate.py` |
+| 기존 파일 수정 | `README.md`의 데모 링크·배포 안내, `PUBLIC_FILES.txt`의 공개 배포 파일 목록 |
+
+앱 화면·업무 코드와 `requirements.txt`는 변경하지 않았다. 배포 파일은 `codex/vps-demo-deployment` 브랜치에서 관리한다.
+
+## 실제 확인 결과와 검증 범위 (2026-10-20)
 
 | 항목 | 확인 상태 |
 | --- | --- |
 | 데모 엔트리포인트·고정 의존성·가상 데이터 격리 | 로컬 소스/테스트로 확인 |
-| 로컬 검증 | 앱/격리/배포 경계 및 Caddy 후보 테스트 88개 통과, 공식 Compose JSON 스키마 검사 통과. 실제 Docker 엔진 실행은 별도 확인 필요 |
+| 로컬 검증 | 앱/격리/배포 경계 및 Caddy 후보 테스트 88개, 공식 Compose JSON 스키마·Bash 구문 검사 통과 |
 | DNS | demo CNAME → inhaaa.com, 둘 다 `76.13.215.52`, 공개 조회에서 AAAA 관측 안 됨 |
-| 기존 공개 서비스 | 포트폴리오 HTTPS 200, www HTTPS 301, 운영 HTTPS 401 Basic Auth 관측 |
-| 데모 HTTPS | 로컬 TLS handshake 실패. 회사 TLS 검사 환경이 개입해 원 서버 원인·인증서 체인은 미확인 |
-| Webconsole 사전 확인 | 운영 컨테이너만 8501 사용, 8502 TCP 리스너 없음, Compose v5.3.1, 메모리 7.8GiB 중 available 7.1GiB |
-| Caddy bind 구조 | 사용자 제공 출력에서 기존 HTTP/HTTPS 블록 모두 명시적 bind 사용. 실제 주소는 서버 안에서 확인 필요 |
-| VPS 파일·여유 디스크·서비스 실행 경로 | 서버에서 추가 확인 필요 |
-| Docker 빌드/실행·재시작·부팅 복구 | Docker/VPS에서 확인 필요 |
-| 신규 HTTPS·WebSocket·PC/모바일·CRUD | 실제 배포 후 확인 필요 |
-| 기존 컨테이너 ID·운영 설정 불변 | 서버 사전/사후 비교 필요 |
+| 소스와 빌드 원본 | VPS 소스 HEAD `9f0cba8`, 이미지 빌드 원본 `c0d96b53e896ba27fd03de6fa3770ac4da7569f5`. 후보 생성 도구·문서만 추가돼 앱 코드는 동일 |
+| VPS 사전 확인 | Compose v5.3.1, 메모리 available 7.1GiB, 여유 디스크 38GB. 배포 전 8502 리스너 없음, Caddy 실행 설정 `/etc/caddy/Caddyfile` 확인 |
+| Docker 빌드·실행 | VPS에서 `pricesys-demo:c0d96b5-20261020` 빌드 후 Healthy. 데모는 `127.0.0.1:8502`만 공개하며 호스트 health `ok` |
+| Caddy 후보·백업 | 기존 5개 bind 동일 확인. `/etc/caddy/Caddyfile.before-demo.20261020T041656190872Z` 백업·후보 권한 600, 후보 validate 성공·diff는 신규 블록만 확인 |
+| Caddy 적용·영구 저장 | 후보 reload → 응답·브라우저 검증 → 원본 동일성·파일시스템·소유자·권한 검사 → 심볼릭 링크를 보존한 원본 교체 완료. 최종 원본 validate 성공, 백업 대비 신규 데모 블록만 확인. 추가 reload 불필요 |
+| 신규 HTTPS·TLS | demo HTTPS 200, VPS에서 `curl -fsS https://demo.inhaaa.com/_stcore/health`가 `-k` 없이 `ok`. 로컬 회사 TLS 검사 환경의 제약은 유지되며, 원 서버 인증서 발급자·만료·전체 체인은 별도 조사하지 않음 |
+| PC 브라우저 | 로그인·홈·10개 메뉴 표시와 진입, 가상 카테고리 생성 → 다른 화면 이동 후 재조회 → 수정 → 삭제 성공. 데모 재시작 후 재로그인 성공 |
+| 추천·백테스트 샘플 | 추천 조회 1건 → 샘플 계산 → 저장 완료 1건 표시. 백테스트 샘플 4건·1건·25% 표 표시 확인 |
+| WebSocket 상호작용 | 실제 로그인·메뉴 이동·CRUD가 동작함을 확인. Network의 101 업그레이드 헤더를 직접 캡처하지는 않음 |
+| 모바일 실기기 | 로그인·홈·사이드바 정상 확인. 그 외 전체 입력·표·다운로드 동작은 미검증 |
+| 데모 재시작 | 데모 restart 후 같은 `c0d96b5-20261020` 이미지의 `up --wait`로 Healthy 복구, 최종 running·`unless-stopped` 확인 |
+| 부팅 설정 | Docker·Caddy 서비스 enabled 확인. OS 전체 재부팅과 실제 부팅 복구 시험은 수행하지 않음 |
+| 기존 서비스 보존 | 운영 HTTPS 401 Basic Auth, 포트폴리오 HTTPS 200, www → inhaaa.com 301. 운영 컨테이너 ID·running 상태·시작 시각이 배포 전 기준과 동일 |
+| 검증 기록 | `current-image`는 `pricesys-demo:c0d96b5-20261020`, `current-commit`은 전체 `c0d96b5` 커밋으로 저장. `verified-compose.yaml`·`containers-verified.txt` 저장과 두 컨테이너의 running·`unless-stopped` 확인 |
+| 추가 검증 | 다운로드 파일의 내용·정상 생성, 모든 화면의 전체 업무 동작은 미검증. OS 전체 재부팅·별도 부하 테스트·원 서버 인증서 상세 조사는 수행하지 않음 |
 
-이번 로컬 작업은 VPS·DNS·기존 서비스·Streamlit Cloud를 수정하지 않았다. 공개 HTTP 사전 확인은 인증 후 내부 기능이나 원 서버 인증서의 정상 동작을 보증하지 않는다.
+VPS 명령은 사용자가 Hostinger Webconsole에서 실행하고 결과를 전달했다. 신규 데모 컨테이너와 Caddy 도메인 블록을 추가했으며 기존 운영 Compose·DB, 포트폴리오 파일, main 브랜치와 Streamlit Cloud 앱은 유지했다. 공개 401 응답만으로 인증 후 운영 기능 전체를 보증하지 않으며, 확인하지 않은 항목은 위 표에 구분했다.
 
 공식 참고: [Streamlit Docker](https://docs.streamlit.io/deploy/tutorials/docker), [Docker Compose 서비스 설정](https://docs.docker.com/reference/compose-file/services/).
