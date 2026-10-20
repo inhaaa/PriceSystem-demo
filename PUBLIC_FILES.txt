@@ -24,6 +24,7 @@ demo/workspace.py
 demo/workspace_glimmer.js
 demo/workspace_theme.py
 deploy/Caddyfile.demo.example
+deploy/prepare_caddy.py
 docs/ARCHITECTURE.md
 docs/DEPLOYMENT.md
 docs/DEVELOPMENT.md
@@ -44,6 +45,7 @@ static/workspace-crystal.svg
 tests/__init__.py
 tests/test_app.py
 tests/test_bid_pages.py
+tests/test_caddy_candidate.py
 tests/test_data_pages.py
 tests/test_deployment.py
 tests/test_isolation.py

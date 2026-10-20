@@ -99,6 +99,23 @@ docker port pricesys-demo
 
 Caddy는 동일 포트에서 bind 유무나 주소를 혼용하면 다른 리스너가 요청을 받을 수 있다. 공개 포트폴리오의 검증된 bind 주소 목록을 확인한 뒤 신규 블록에도 일관되게 적용한다. [bind 공식 설명](https://caddyserver.com/docs/caddyfile/directives/bind)을 참고한다.
 
+### Webconsole에서 후보 자동 생성
+
+기존 모든 명시적 `bind`가 동일하고 외부 `import`가 없는 현재 구성에서는 다음 도구를 사용할 수 있다. 먼저 이 도구가 포함된 배포 브랜치를 받는다. 실행 중인 컨테이너는 소스 업데이트만으로 바뀌지 않는다.
+
+```bash
+git -C /srv/pricesys-demo pull --ff-only origin codex/vps-demo-deployment
+python3 /srv/pricesys-demo/deploy/prepare_caddy.py
+caddy validate --config /etc/caddy/Caddyfile.demo-candidate --adapter caddyfile
+diff -u /etc/caddy/Caddyfile /etc/caddy/Caddyfile.demo-candidate
+```
+
+도구는 현재 파일의 내용을 그대로 백업하고 신규 블록만 붙인 후보를 만든다. 백업과 후보는 권한 600으로 생성한다. 실제 bind·인증 해시는 화면에 출력하지 않는다. 기존 도메인 설정, 다른 bind, import, 기존 후보·백업 기록이 있으면 덮어쓰지 않고 중단한다. 실패해도 실제 Caddyfile을 수정하거나 서비스를 reload하지 않는다. 일부 준비 파일이 남으면 삭제하지 말고 오류를 확인한다.
+
+이 방법을 사용했다면 아래 **수동 후보 생성** 부분은 건너뛰고 후보 검증과 비교를 확인한 후 **후보 반영**으로 진행한다. diff에는 신규 데모 블록 추가만 있어야 한다. `diff`는 차이가 있으면 종료 코드 1을 반환하므로 출력 내용으로 판단한다.
+
+### 수동 후보 생성
+
 먼저 전체 파일을 백업하고 후보를 만든다. 이 파일들에는 기존 인증 해시가 있으므로 서버에만 보관한다.
 
 ```bash
@@ -128,6 +145,8 @@ diff -u "$CADDY_BACKUP" /etc/caddy/Caddyfile.demo-candidate
 ```
 
 후보 생성은 한 번만 한다. 재시도할 때는 백업에서 후보를 다시 만들고 신규 블록이 중복되지 않았는지 확인한다. `diff`에 **신규 데모 블록 추가만** 있어야 한다. 상대 경로 import가 있으면 후보도 `/etc/caddy`에서 검증되도록 기존 파일과 같은 실행 디렉터리를 사용한다. 환경변수 치환이 있다면 실제 Caddy 서비스와 같은 환경에서도 유효해야 한다.
+
+### 후보 반영
 
 `Valid configuration`과 diff를 직접 확인한 뒤 아래를 실행한다. 후보·백업의 크기와 읽기 권한을 검사하고, 원본이 백업 후 바뀌지 않았는지도 확인한다. 검증한 후보를 새 임시 파일에 완전히 복사한 뒤 원본의 소유자·권한을 적용하고 같은 디렉터리 안에서 교체한다. Caddyfile이 심볼릭 링크라면 대상 파일에 반영하여 링크를 유지한다.
 
@@ -273,7 +292,7 @@ journalctl -u caddy --since '-15 minutes' --no-pager -n 100
 | 항목 | 확인 상태 |
 | --- | --- |
 | 데모 엔트리포인트·고정 의존성·가상 데이터 격리 | 로컬 소스/테스트로 확인 |
-| 로컬 검증 | 앱/격리/배포 경계 테스트 82개 통과, 공식 Compose JSON 스키마 검사 통과. 실제 Docker 엔진 실행은 별도 확인 필요 |
+| 로컬 검증 | 앱/격리/배포 경계 및 Caddy 후보 테스트 88개 통과, 공식 Compose JSON 스키마 검사 통과. 실제 Docker 엔진 실행은 별도 확인 필요 |
 | DNS | demo CNAME → inhaaa.com, 둘 다 `76.13.215.52`, 공개 조회에서 AAAA 관측 안 됨 |
 | 기존 공개 서비스 | 포트폴리오 HTTPS 200, www HTTPS 301, 운영 HTTPS 401 Basic Auth 관측 |
 | 데모 HTTPS | 로컬 TLS handshake 실패. 회사 TLS 검사 환경이 개입해 원 서버 원인·인증서 체인은 미확인 |
