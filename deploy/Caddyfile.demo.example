@@ -1,0 +1,13 @@
+# 기존 Caddyfile을 대체하지 않는다. docs/DEPLOYMENT.md의 후보 검증 절차를 따른다.
+# 아래 토큰은 실제 기존 사이트와 네트워크를 확인한 bind 주소 목록으로 바꾼다.
+# 확인 전에는 의도적으로 유효하지 않은 예시이며 그대로 import하지 않는다.
+http://demo.inhaaa.com {
+    bind __CONFIRMED_BIND_ADDRESSES__
+    redir https://demo.inhaaa.com{uri} permanent
+}
+
+https://demo.inhaaa.com {
+    bind __CONFIRMED_BIND_ADDRESSES__
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8502
+}

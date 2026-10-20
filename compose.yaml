@@ -1,0 +1,31 @@
+{
+  "name": "pricesys-demo",
+  "services": {
+    "app": {
+      "container_name": "pricesys-demo",
+      "image": "${DEMO_IMAGE:-pricesys-demo:local}",
+      "build": {"context": "."},
+      "ports": ["127.0.0.1:8502:8501"],
+      "restart": "unless-stopped",
+      "init": true,
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=64m,mode=1777"],
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "cpus": 0.75,
+      "mem_limit": "768m",
+      "pids_limit": 128,
+      "logging": {
+        "driver": "json-file",
+        "options": {"max-size": "10m", "max-file": "3"}
+      },
+      "healthcheck": {
+        "test": ["CMD", "python", "-c", "import urllib.request; r = urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3); assert r.status == 200 and r.read() == b'ok'"],
+        "interval": "30s",
+        "timeout": "5s",
+        "start_period": "45s",
+        "retries": 3
+      }
+    }
+  }
+}

@@ -1,9 +1,12 @@
 .gitignore
+.dockerignore
 .streamlit/config.toml
 ASSET_NOTICE.md
 PUBLIC_FILES.txt
 README.md
+Dockerfile
 app.py
+compose.yaml
 assets/demo.css
 assets/login.css
 assets/logo.svg
@@ -20,7 +23,9 @@ demo/visual_components.py
 demo/workspace.py
 demo/workspace_glimmer.js
 demo/workspace_theme.py
+deploy/Caddyfile.demo.example
 docs/ARCHITECTURE.md
+docs/DEPLOYMENT.md
 docs/DEVELOPMENT.md
 docs/images/analysis.png
 docs/images/architecture.svg
@@ -40,6 +45,7 @@ tests/__init__.py
 tests/test_app.py
 tests/test_bid_pages.py
 tests/test_data_pages.py
+tests/test_deployment.py
 tests/test_isolation.py
 tests/test_services.py
 tests/test_store.py

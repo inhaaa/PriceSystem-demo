@@ -176,6 +176,10 @@ python3 -m venv .venv
 
 터미널에 표시되는 로컬 주소를 브라우저에서 열고 `admin` / `admin`으로 로그인합니다. 설치 없이 둘러보려면 [온라인 데모](https://pricesystem-demo.streamlit.app/)를 이용하세요.
 
+### VPS 독립 배포
+
+Docker와 Caddy로 `https://demo.inhaaa.com`에 배포하는 구성 및 Hostinger Webconsole 명령은 [VPS 배포 안내](docs/DEPLOYMENT.md)에 정리했습니다. 별도 Compose 프로젝트 `pricesys-demo`가 `127.0.0.1:8502`만 사용하며, 데이터는 기존과 동일하게 세션 메모리에 저장합니다. 신규 주소의 배포와 기능 검증이 끝날 때까지 기존 Streamlit Cloud 주소를 유지합니다.
+
 ### 테스트 실행
 
 가상환경을 활성화한 상태에서 실행합니다.
