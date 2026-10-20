@@ -2,6 +2,8 @@
 
 목표 주소는 `https://demo.inhaaa.com`이다. 아래 명령은 Hostinger **Webconsole의 Ubuntu Bash**에서 실행한다. 관리자 권한이 필요하면 콘솔에서 직접 `sudo -i`로 전환한다. 비밀번호·개인키·Caddy 인증 해시는 채팅이나 Git에 올리지 않는다.
 
+현재 배포 대상 브랜치는 사용자 요청에 따라 `main`으로 통일한다. main push 후의 자동 갱신은 [자동배포 안내](AUTO_DEPLOYMENT.md)를 따른다. 아래 문서의 최초 배포 검증 기록은 자동배포 설정 이전의 이력이다.
+
 Webconsole에서 여러 줄을 한꺼번에 붙이면 명령이 합쳐질 수 있으므로 **한 줄씩 실행하고 결과를 확인**한다. `if` 블록은 각 줄을 차례로 입력하고 마지막 `fi`까지 입력한다.
 
 ## 배포 계약
@@ -55,14 +57,14 @@ Caddyfile은 **서버 안에서** 전체를 읽고 글로벌 옵션, import, `bi
 
 ## 2. GitHub 소스 준비
 
-아래 최초 배포 명령은 **이 작업에서 만든 배포 파일까지 GitHub에 반영한 뒤** 실행한다. 로컬 파일 작성만으로 GitHub에 자동 반영되지는 않는다. 기존 main에 Dockerfile이 없으면 clone만으로 이번 구성이 내려오지 않는다. 아래 예시는 기존 Streamlit Cloud가 사용하는 main을 보존하기 위해 `codex/vps-demo-deployment` 브랜치를 지정한다. 검토 후 main에 병합하면 향후 배포 대상도 main으로 전환할 수 있다.
+아래 최초 배포 명령은 **배포 파일까지 GitHub main에 반영한 뒤** 실행한다. 최초 VPS 배포에서는 `codex/vps-demo-deployment` 브랜치를 사용했으며, 이후 자동배포 요청에 따라 main으로 통일한다.
 
 로컬 변경 검토·테스트 후 필요한 파일만 커밋하고 push한다. `.local`, `.env`, 비밀 파일은 포함하지 않는다. 배포용 새 파일은 `PUBLIC_FILES.txt`에 등록되어 있다. 배포 준비 ZIP도 이 공개 목록으로만 만들 수 있다.
 
 VPS에서 아래 블록은 `/srv/pricesys-demo`가 **아직 없을 때만** 실행한다. 이미 있다면 파일과 소유자를 먼저 확인하고 재배포 절차를 따른다.
 
 ```bash
-test ! -e /srv/pricesys-demo && git clone --branch codex/vps-demo-deployment https://github.com/inhaaa/PriceSystem-demo.git /srv/pricesys-demo
+test ! -e /srv/pricesys-demo && git clone --branch main https://github.com/inhaaa/PriceSystem-demo.git /srv/pricesys-demo
 cd /srv/pricesys-demo
 git status --short
 git log -1 --oneline
@@ -100,7 +102,7 @@ docker port pricesys-demo
 ### 후보 생성과 검증
 
 ```bash
-git -C /srv/pricesys-demo pull --ff-only origin codex/vps-demo-deployment
+git -C /srv/pricesys-demo pull --ff-only origin main
 python3 /srv/pricesys-demo/deploy/prepare_caddy.py
 cd /srv/pricesys-demo
 CADDY_LIVE=/etc/caddy/Caddyfile
@@ -204,6 +206,8 @@ docker inspect --format '{{.Name}} {{.Id}} {{.State.Status}} {{.State.StartedAt}
 
 ## 6. 소스 수정 후 재배포
 
+자동배포 설치·활성화 후에는 main push로 갱신된다. 아래 수동 절차나 7절의 롤백을 실행하려면 먼저 [자동배포 중지 절차](AUTO_DEPLOYMENT.md)를 따르고 실행 중 작업이 없는지 확인한다.
+
 로컬에서 테스트 후 GitHub에 변경을 반영한다. VPS에서는 작업 트리가 깨끗한지와 현재 데모가 정상인지 먼저 확인한다. 이전 검증 기록을 덮어쓰기 전에 롤백 자료를 보관한다.
 
 ```bash
@@ -223,7 +227,7 @@ curl -fsS https://demo.inhaaa.com/_stcore/health
 
 각 명령이 성공한 경우에만 계속한다. `git status`에 변경이 있거나 fast-forward가 실패하면 멈추고 확인한다. 새 버전의 주요 기능과 기존 서비스까지 재검증한 뒤 5절의 검증 기록을 갱신한다. 이전 이미지와 기록은 롤백을 위해 보관한다. 이미지/컨테이너 전체 정리, 다른 프로젝트의 down 또는 Docker 데몬 재시작은 사용하지 않는다.
 
-데모 재생성·재시작 때 현재 체험 세션은 초기화된다. 앱은 한 컨테이너에서 실행하며 무중단 배포나 다중 인스턴스 세션 공유를 구현하지 않는다. 자동 배포는 이 수동 절차가 검증된 후 도입한다.
+데모 재생성·재시작 때 현재 체험 세션은 초기화된다. 앱은 한 컨테이너에서 실행하며 무중단 배포나 다중 인스턴스 세션 공유를 구현하지 않는다.
 
 ## 7. 장애 시 데모만 롤백
 
@@ -285,9 +289,9 @@ journalctl -u caddy --since '-15 minutes' --no-pager -n 100
 | 신규 문서·테스트 | `docs/DEPLOYMENT.md`, `tests/test_deployment.py`, `tests/test_caddy_candidate.py` |
 | 기존 파일 수정 | `README.md`의 데모 링크·배포 안내, `PUBLIC_FILES.txt`의 공개 배포 파일 목록 |
 
-앱 화면·업무 코드와 `requirements.txt`는 변경하지 않았다. 배포 파일은 `codex/vps-demo-deployment` 브랜치에서 관리한다.
+앱 화면·업무 코드와 `requirements.txt`는 변경하지 않았다. 최초 배포 파일 목록이며 이후 추가한 자동배포 파일은 [별도 안내](AUTO_DEPLOYMENT.md)에 설명한다.
 
-## 실제 확인 결과와 검증 범위 (2026-10-20)
+## 최초 배포 확인 결과와 검증 범위 (2026-10-20, 자동배포 설정 전)
 
 | 항목 | 확인 상태 |
 | --- | --- |

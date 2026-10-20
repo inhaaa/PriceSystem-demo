@@ -24,8 +24,12 @@ demo/workspace.py
 demo/workspace_glimmer.js
 demo/workspace_theme.py
 deploy/Caddyfile.demo.example
+deploy/auto_deploy.py
 deploy/prepare_caddy.py
+deploy/pricesys-demo-auto.service
+deploy/pricesys-demo-auto.timer
 docs/ARCHITECTURE.md
+docs/AUTO_DEPLOYMENT.md
 docs/DEPLOYMENT.md
 docs/DEVELOPMENT.md
 docs/images/analysis.png
@@ -44,6 +48,9 @@ static/vendor/three.module.min.js
 static/workspace-crystal.svg
 tests/__init__.py
 tests/test_app.py
+tests/test_auto_deploy.py
+tests/test_auto_deploy_install.py
+tests/test_auto_deploy_units.py
 tests/test_bid_pages.py
 tests/test_caddy_candidate.py
 tests/test_data_pages.py

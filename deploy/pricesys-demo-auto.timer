@@ -1,0 +1,11 @@
+[Unit]
+Description=Check GitHub main for PriceSystem demo updates
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=60s
+AccuracySec=5s
+Unit=pricesys-demo-auto.service
+
+[Install]
+WantedBy=timers.target

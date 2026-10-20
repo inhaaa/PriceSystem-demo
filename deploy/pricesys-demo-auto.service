@@ -1,0 +1,18 @@
+[Unit]
+Description=Update the isolated PriceSystem demo from GitHub main
+Wants=network-online.target
+After=network-online.target docker.service
+ConditionPathExists=/usr/local/lib/pricesys-demo/compose.yaml
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/lib/pricesys-demo/auto_deploy.py
+TimeoutStartSec=25min
+TimeoutStopSec=3min
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+Environment=PYTHONUNBUFFERED=1
