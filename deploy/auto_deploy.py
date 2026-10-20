@@ -124,9 +124,10 @@ def deploy(root, compose_path, *, run=run_command, check=False, retry=False):
     def inspect(name):
         template = ('{"Id":{{json .Id}},"State":{"Status":{{json .State.Status}},'
                     '"StartedAt":{{json .State.StartedAt}},"Health":{"Status":'
-                    '{{if .State.Health}}{{json .State.Health.Status}}{{else}}null{{end}}}},'
+                    '{{with index .State "Health"}}{{json .Status}}{{else}}null{{end}}}},'
                     '"Config":{"Image":{{json .Config.Image}},"Labels":'
-                    '{"com.docker.compose.project":{{json (index .Config.Labels "com.docker.compose.project")}}}},'
+                    '{"com.docker.compose.project":'
+                    '{{with index .Config "Labels"}}{{json (index . "com.docker.compose.project")}}{{else}}null{{end}}}},'
                     '"HostConfig":{"PortBindings":{{json .HostConfig.PortBindings}},'
                     '"Memory":{{json .HostConfig.Memory}},"CpuPeriod":{{json .HostConfig.CpuPeriod}},'
                     '"CpuQuota":{{json .HostConfig.CpuQuota}}}}')

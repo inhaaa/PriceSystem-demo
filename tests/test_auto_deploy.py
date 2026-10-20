@@ -52,6 +52,7 @@ class FakeRunner:
         self.demo_labels = {"com.docker.compose.project": "pricesys-demo"}
         self.demo_ports = {"8501/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8502"}]}
         self.builder_memory = 1610612736
+        self.strict_templates = False
 
     @staticmethod
     def option(args, option):
@@ -109,6 +110,14 @@ class FakeRunner:
             return json.dumps([{"Id": "rollback-image", "RepoTags": [OLD_IMAGE]}])
         if args[:2] == ["docker", "inspect"]:
             names = args[args.index("container") + 1:] if "container" in args else args[2:]
+            if self.strict_templates:
+                template = self.option(args, "--format")
+                container = self.container(names[0])
+                if ".State.Health" in template and "Health" not in container["State"]:
+                    raise subprocess.CalledProcessError(1, args, output='map has no entry for key "Health"')
+                if ".Config.Labels" in template and not container.get("Config", {}).get("Labels"):
+                    raise subprocess.CalledProcessError(1, args, output='index of untyped nil')
+                return json.dumps(container)
             return json.dumps([self.container(name) for name in names])
         if args[:3] == ["docker", "buildx", "inspect"]:
             return "Name: pricesys-demo-builder\nDriver: docker-container\n"
@@ -241,6 +250,12 @@ class AutoDeployTests(unittest.TestCase):
         self.assertEqual(self.runner.mutations(), [])
         after = {path.name: path.read_bytes() for path in self.state.iterdir()}
         self.assertEqual(after, before)
+
+    def test_check_supports_real_builder_without_healthcheck_or_compose_labels(self):
+        self.runner.strict_templates = True
+        self.assertEqual(self.deploy(check=True), "checked")
+        self.assertEqual(self.runner.mutations(), [])
+        self.assert_current_unchanged()
 
     def test_tests_fail_before_container_replacement_and_mark_commit(self):
         self.runner.fail_test = True
