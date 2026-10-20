@@ -175,6 +175,10 @@ class AutoDeployTests(unittest.TestCase):
         (self.state / "current-image").write_text(OLD_IMAGE + "\n", encoding="utf-8")
         (self.state / "current-commit").write_text(OLD_COMMIT + "\n", encoding="utf-8")
         self.runner = FakeRunner(self.config)
+        # /tmp가 64MiB인 테스트 컨테이너와 VPS의 빌드 디스크 관측을 분리한다.
+        space = patch("shutil.disk_usage", return_value=SimpleNamespace(free=20 * 1024 ** 3))
+        space.start()
+        self.addCleanup(space.stop)
 
     def helper(self):
         path = ROOT / "deploy/auto_deploy.py"
