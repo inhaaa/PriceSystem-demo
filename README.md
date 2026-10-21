@@ -182,7 +182,7 @@ python3 -m venv .venv
 
 Docker와 Caddy로 `https://demo.inhaaa.com`에 배포한 구성 및 Hostinger Webconsole 명령은 [VPS 배포 안내](docs/DEPLOYMENT.md)에 정리했습니다. 별도 Compose 프로젝트 `pricesys-demo`가 `127.0.0.1:8502`만 사용하며, 데이터는 기존과 동일하게 세션 메모리에 저장합니다.
 
-`main` push를 감지해 빌드·테스트 후 데모만 갱신하는 [자동배포 구성](docs/AUTO_DEPLOYMENT.md)을 제공합니다. VPS에서 최초 설치·검증·timer 활성화를 마치면 약 1분 간격으로 변경을 확인합니다.
+VPS에 [자동배포](docs/AUTO_DEPLOYMENT.md)를 설치하고 timer를 활성화했습니다. `main` push 후 약 1분 간격으로 변경을 확인하고, 빌드·테스트를 통과하면 데모만 갱신합니다. 화면·업무 코드 수정 후에는 Webconsole에서 별도 배포 명령을 실행할 필요가 없습니다.
 
 ### 테스트 실행
 

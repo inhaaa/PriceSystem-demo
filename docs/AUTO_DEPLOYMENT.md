@@ -2,6 +2,17 @@
 
 GitHub의 `main`을 VPS가 약 60초마다 확인한다. 변경이 있으면 전용 builder로 이미지를 만들고 격리 컨테이너에서 전체 테스트를 실행한 뒤 `pricesys-demo`만 교체한다. 주기는 이전 작업 종료 후 60초이며 빌드·테스트 시간이 추가된다. GitHub Actions, SSH 키, 웹훅, 신규 공개 포트는 사용하지 않는다.
 
+## 설치 확인 (2026-10-21)
+
+현재 VPS에는 고정 updater·Compose·서비스·timer를 설치하고 timer를 활성화했다. 아래 최초 설치 절차는 반복하지 않는다.
+
+- 실제 builder 제한: 메모리 `1610612736`, CPU period `100000`, quota `75000` 확인.
+- 첫 서비스 실행: `413574f1b734a87caec054dccbb9c0ec6d72b93a` 이미지 빌드 후 Linux 격리 컨테이너에서 테스트 **118개 모두 통과**(14.640초). 데모 Healthy, `Result=success`, `ExecMainStatus=0` 확인.
+- HTTPS health `ok`, 운영 컨테이너 ID·running 상태·시작 시각이 최초 배포 전 기준과 동일함을 확인.
+- timer의 부팅 자동 시작 symlink와 `list-timers`의 LAST/NEXT 예약 확인.
+
+VPS 명령은 사용자가 Hostinger Webconsole에서 실행하고 결과를 전달했다. 실행 중인 정확한 커밋과 이후 자동배포 결과는 아래 로그·`current-commit` 명령으로 확인한다. OS 전체 재부팅 시험은 수행하지 않았다.
+
 ## 배포 경계
 
 - 대상: `https://github.com/inhaaa/PriceSystem-demo.git`의 `main`.
