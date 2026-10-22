@@ -289,3 +289,92 @@ div[class*="st-key-workspace_tab_"] [data-testid="stColumn"] { min-width: 0; fle
   .st-key-report_summary [data-testid="stColumn"]:last-child { flex-basis: 100%; }
   .st-key-report_count_panel, .st-key-report_amount_panel, .st-key-report_detail_panel { padding: 18px 14px; }
 }
+
+/* The result cards share the ledger surface and keep their outcome colors. */
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status {
+  min-width: 0;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status :is(.st-key-status_result_cards, .st-key-status_averages) [data-testid="stHorizontalBlock"] {
+  flex-direction: row; flex-wrap: nowrap; gap: 12px;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status :is(.st-key-status_result_cards, .st-key-status_averages) [data-testid="stColumn"] {
+  flex: 1 1 0; width: auto; min-width: 0;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [data-testid="stMetric"] {
+  min-height: 88px; padding: 12px; background: var(--ps-surface);
+  border: 1px solid var(--ps-border); border-radius: 5px;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [data-testid="stMetricLabel"] p {
+  color: var(--ps-muted); font-size: 12px; white-space: normal;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [data-testid="stMetricValue"] {
+  color: var(--ps-text); font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button {
+  width: 100%; min-height: 88px; padding: 12px; border: 2px solid var(--ps-border); border-radius: 5px;
+  background: var(--ps-surface); color: var(--ps-text); justify-content: flex-start; text-align: left;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_card_win button {
+  --status-accent: #17613b; --status-soft: #edf7f0;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_card_loss button {
+  --status-accent: #9b3d35; --status-soft: #fff1ef;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button [data-testid="stMarkdownContainer"] {
+  text-align: left;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button p {
+  margin: 0; color: var(--ps-muted); font-size: 12px; line-height: 1.55;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button p:last-child {
+  margin-top: 5px; color: var(--ps-text); font-size: 22px; line-height: 1.25;
+}
+/* Semantic selection must remain visible when the shared accent palette changes. */
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button:is(:hover, [kind="primary"]) {
+  background: var(--status-soft) !important; border-color: var(--status-accent) !important; color: var(--status-accent) !important;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button:is(:hover, [kind="primary"]) p {
+  color: var(--status-accent);
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [class*="st-key-status_card_"] button[kind="primary"] {
+  box-shadow: inset 3px 0 var(--status-accent);
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_averages [data-testid="stColumn"]:nth-child(-n + 2) [data-testid="stMetric"] {
+  border-top: 3px solid #17613b;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_averages [data-testid="stColumn"]:nth-child(n + 3) [data-testid="stMetric"] {
+  border-top: 3px solid #9b3d35;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_search_action {
+  width: 100%; min-width: 0; flex-direction: row; justify-content: flex-end;
+}
+body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_search_action [data-testid="stFormSubmitButton"] button {
+  width: 112px; min-width: 112px; min-height: 40px; border-radius: 5px; font-weight: 600;
+}
+@media (max-width: 768px) {
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status :is(.st-key-status_result_cards, .st-key-status_averages, .st-key-status_search_form) [data-testid="stHorizontalBlock"]:not(.st-key-status_search_action) {
+    flex-direction: row; flex-wrap: wrap; gap: 12px;
+  }
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status :is(.st-key-status_result_cards, .st-key-status_averages, .st-key-status_search_form) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+    flex: 1 1 calc(50% - 6px); width: calc(50% - 6px); min-width: 0; max-width: calc(50% - 6px);
+  }
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_result_cards [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+    flex-basis: 100%; width: 100%; max-width: 100%;
+  }
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_averages [data-testid="stMetricValue"] {
+    font-size: 18px;
+  }
+}
+@media (max-width: 360px) {
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_averages [data-testid="stMetricValue"] {
+    font-size: 16px;
+  }
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status [data-testid="stMetricLabel"] p {
+    font-size: 11px;
+  }
+}
+@media (pointer: coarse) {
+  body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_status .st-key-status_search_action [data-testid="stFormSubmitButton"] button {
+    min-height: 44px;
+  }
+}

@@ -7,6 +7,7 @@ from demo import bid_pages, data_pages, workspace
 from demo.fixtures import create_demo_store
 from demo.performance import performance_page
 from demo.services import authenticate
+from demo.status import status_page
 from demo.ui import apply_theme, render_login_page
 
 
@@ -18,7 +19,7 @@ HANDLERS = {
     "daily_notices": data_pages.daily_notices,
     "daily_recommend": bid_pages.daily_page,
     "my_bid_manage": bid_pages.management_page,
-    "my_bid_status": bid_pages.status_page,
+    "my_bid_status": status_page,
     "g2b_api": bid_pages.api_page,
     "result_manage": bid_pages.results_page,
     "bid_review": bid_pages.review_page,
