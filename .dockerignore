@@ -14,6 +14,8 @@ demo/*
 !demo/samples.py
 !demo/services.py
 !demo/store.py
+!demo/fixtures.py
+!demo/performance.py
 !demo/ui.py
 !demo/visual_components.py
 !demo/workspace.py

@@ -4,8 +4,9 @@ from pathlib import Path
 import streamlit as st
 
 from demo import bid_pages, data_pages, workspace
+from demo.fixtures import create_demo_store
+from demo.performance import performance_page
 from demo.services import authenticate
-from demo.store import DemoStore
 from demo.ui import apply_theme, render_login_page
 
 
@@ -21,6 +22,7 @@ HANDLERS = {
     "g2b_api": bid_pages.api_page,
     "result_manage": bid_pages.results_page,
     "bid_review": bid_pages.review_page,
+    "performance_report": performance_page,
 }
 
 
@@ -31,7 +33,7 @@ def restart(logout=False):
     st.session_state.clear()
     if not logout:
         st.session_state["authenticated"] = True
-        st.session_state["store"] = DemoStore()
+        st.session_state["store"] = create_demo_store()
         st.session_state["flash"] = "기본 샘플로 초기화했습니다."
 
 
@@ -43,7 +45,7 @@ def main():
         if submitted:
             if authenticate(username, password):
                 st.session_state["authenticated"] = True
-                st.session_state["store"] = DemoStore()
+                st.session_state["store"] = create_demo_store()
                 st.rerun()
             st.error("체험 계정은 admin / admin 입니다.")
         return

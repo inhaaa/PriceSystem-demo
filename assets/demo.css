@@ -275,3 +275,17 @@ div[class*="st-key-workspace_tab_"] [data-testid="stColumn"] { min-width: 0; fle
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Monthly reports share the workbench surfaces and remain readable on mobile. */
+.st-key-performance_report { min-width: 0; }
+.st-key-report_summary [data-testid="stHorizontalBlock"] { flex-direction: row; flex-wrap: nowrap; gap: 16px; }
+.st-key-report_summary [data-testid="stColumn"] { min-width: 0; flex: 1 1 0; }
+.st-key-report_summary [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
+.st-key-report_count_panel, .st-key-report_amount_panel, .st-key-report_detail_panel { min-width: 0; padding: 22px; border: 1px solid var(--ps-border); border-radius: 6px; background: var(--ps-surface); }
+.st-key-report_detail_panel { margin-top: 8px; }
+@media (max-width: 768px) {
+  .st-key-report_summary [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: 12px; }
+  .st-key-report_summary [data-testid="stColumn"] { width: auto; min-width: 0; flex: 1 1 calc(50% - 12px); }
+  .st-key-report_summary [data-testid="stColumn"]:last-child { flex-basis: 100%; }
+  .st-key-report_count_panel, .st-key-report_amount_panel, .st-key-report_detail_panel { padding: 18px 14px; }
+}

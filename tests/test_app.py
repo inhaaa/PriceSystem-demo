@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
-PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage", "bid_review"]
+PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage", "bid_review", "performance_report"]
 
 
 class AppJourneys(unittest.TestCase):
@@ -60,7 +60,7 @@ class AppJourneys(unittest.TestCase):
     def test_original_menu_opens_separate_workspace_tabs(self):
         app = self.login(self.new_app())
         self.assertEqual(len(app.radio), 0)
-        self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 11)
+        self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 12)
         app.button(key="menu_open_data_upload").click().run()
         self.assertEqual([tab.label for tab in app.tabs], ["관심공고", "입찰서류함 엑셀", "상세 PDF", "과거데이터", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
         app.button(key="menu_open_daily_recommend").click().run()
@@ -81,6 +81,26 @@ class AppJourneys(unittest.TestCase):
         app.button(key="reset_samples").click().run()
         self.assertEqual(len(app.session_state["store"].notices()), initial)
         self.assertFalse(app.session_state["store"].notices(query="DEMO-CURRENT_EXCEL"))
+
+    def test_performance_menu_uses_six_month_samples_and_reset_restores_them(self):
+        app = self.login(self.new_app())
+        self.assertIn('menu_open_performance_report', {button.key for button in app.button})
+        self.assertEqual(len(app.session_state['store'].notices()), 95)
+        app.button(key='menu_open_performance_report').click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state['active_tab'], 'performance_report')
+        self.assertEqual({item.label: item.value for item in app.metric}, {
+            '투찰 건수': '21건', '낙찰 건수': '8건', '낙찰금액': '116,500,000원',
+        })
+        monthly = app.dataframe[0].value
+        self.assertEqual(monthly.loc[monthly['투찰 건수'].gt(0), '월'].tolist(),
+                         [f'2026-{month:02d}' for month in range(5, 11)])
+        store = app.session_state['store']
+        store.delete_submission(store.submissions()[-1]['id'])
+        app.button(key='reset_samples').click().run()
+        app.button(key='menu_open_performance_report').click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual({item.label: item.value for item in app.metric}['투찰 건수'], '21건')
 
     def test_review_survives_tab_close_and_clears_on_reset_and_logout(self):
         app = self.login(self.new_app())

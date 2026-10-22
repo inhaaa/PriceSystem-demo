@@ -35,7 +35,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual([p["label"] for p in workspace.PAGES], [
             "카테고리 관리", "데이터 등록", "통합 공고 조회", "입찰/낙찰 데이터 조회",
             "개찰일별 공고관리", "개찰일별 추천계산", "나의 투찰관리", "내 투찰현황",
-            "나라장터 API 연동", "결과 관리", "투찰 검토함",
+            "나라장터 API 연동", "결과 관리", "투찰 검토함", "성과 리포트",
         ])
         with patch.object(workspace.st, "session_state", {}):
             workspace.open_tab("daily_notices")
