@@ -62,9 +62,10 @@ class BidPageJourneys(unittest.TestCase):
                 app.run()
                 self.assertFalse(app.exception)
 
-    def test_recommendation_tabs_show_fixed_backtest_and_highlighted_metrics(self):
+    def test_recommendation_workbench_keeps_fixed_backtest_and_sample_values(self):
         app = self.page("daily_page")
-        self.assertEqual(["사용자용 추천계산", "백테스트"], [tab.label for tab in app.tabs])
+        self.assertFalse(app.tabs)
+        self.assertIn("백테스트 샘플", [item.label for item in app.expander])
         app.button(key="backtest_show").click().run()
         self.assertFalse(app.exception)
         self.assertTrue(any("실제 검증 성과가 아닙니다" in str(item.value) for item in app.info))
@@ -75,12 +76,12 @@ class BidPageJourneys(unittest.TestCase):
         app.button(key="daily_calculate").click().run()
         self.assertFalse(app.exception)
         self.assertTrue(any("recommendation-amount" in str(item.value) for item in app.markdown))
-        metrics = {item.label: item.value for item in app.metric}
-        self.assertEqual("88.45%", metrics["실투찰율 · 샘플"])
-        self.assertEqual("76.0%", metrics["신뢰도 · 샘플"])
+        self.assertFalse(app.metric)
         result = next(frame.value for frame in app.dataframe if "저장 상태" in frame.value.columns)
         self.assertIn("실투찰율 (%)", result.columns)
         self.assertIn("신뢰도 (%)", result.columns)
+        self.assertEqual(88.45, result.iloc[0]["실투찰율 (%)"])
+        self.assertEqual(76.0, result.iloc[0]["신뢰도 (%)"])
 
     def test_daily_requires_sample_confirmation_and_saves_selected_result(self):
         app = self.page("daily_page")
@@ -97,11 +98,66 @@ class BidPageJourneys(unittest.TestCase):
         app.checkbox(key="daily_select_all").set_value(False).run()
         self.assertTrue(app.button(key="daily_calculate").disabled)
 
+    def test_daily_review_panel_stays_empty_until_matching_selection_is_calculated(self):
+        app = self.page("daily_page")
+        self.assertTrue(any("아직 추천 결과가 없습니다" in item.value for item in app.markdown))
+        app.button(key="daily_search").click().run()
+        self.assertTrue(any("아직 추천 결과가 없습니다" in item.value for item in app.markdown))
+        app.button(key="daily_check").click().run()
+        app.button(key="daily_calculate").click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(any("recommendation-panel__amount" in item.value for item in app.markdown))
+        self.assertTrue(any("낙찰 확률이 아닙니다" in item.value for item in app.caption))
+        app.checkbox(key="daily_select_all").set_value(False).run()
+        self.assertTrue(any("아직 추천 결과가 없습니다" in item.value for item in app.markdown))
+        self.assertFalse(any("recommendation-panel__amount" in item.value for item in app.markdown))
+        self.assertNotIn("daily_save_all", [button.key for button in app.button])
+        self.assertFalse(any("저장 상태" in grid.value.columns for grid in app.dataframe))
+
+    def test_daily_review_escapes_notice_text_and_reports_current_save_state(self):
+        app = self.page("daily_page")
+        store = app.session_state["store"]
+        row = store.get_notice(1)
+        store.save_notice({**row, "title": '<img src=x onerror="alert(1)">가상 공고',
+                           "agency": "<b>가상 발주기관</b>"}, notice_id=1)
+        app.button(key="daily_search").click().run()
+        app.button(key="daily_check").click().run()
+        app.checkbox(key="daily_auto_save").set_value(False).run()
+        app.button(key="daily_calculate").click().run()
+        markup = "\n".join(item.value for item in app.markdown)
+        self.assertIn("&lt;img", markup)
+        self.assertNotIn("가상 발주기관", markup)
+        self.assertNotIn('<img src=x onerror="alert(1)">', markup)
+        self.assertIn("42,000,000원", markup)
+        self.assertIn("2026-10-03", markup)
+        self.assertIn("저장 가능", markup)
+        app.button(key="daily_save_all").click().run()
+        self.assertFalse(app.exception)
+        self.assertIn("저장 완료", "\n".join(item.value for item in app.markdown))
+
+    def test_daily_native_tables_align_money_and_keep_notice_fields_readable(self):
+        app = self.page("daily_page")
+        app.button(key="daily_search").click().run()
+        selection = app.dataframe[0]
+        columns = json.loads(selection.proto.columns)
+        self.assertEqual(["선택", "공고명", "기초금액", "공고번호", "개찰일"],
+                         list(selection.proto.column_order))
+        self.assertEqual("right", columns["기초금액"].get("alignment"))
+        self.assertEqual("small", columns["기초금액"].get("width"))
+        self.assertEqual("medium", columns["공고명"].get("width"))
+        self.assertTrue(columns["id"].get("hidden"))
+        self.assertIn("id", selection.value.columns)
+        app.button(key="daily_check").click().run()
+        app.button(key="daily_calculate").click().run()
+        result = next(grid for grid in app.dataframe if "저장 상태" in grid.value.columns)
+        columns = json.loads(result.proto.columns)
+        self.assertEqual("right", columns["추천 금액 (원)"].get("alignment"))
+
     def test_daily_search_uses_date_category_and_one_title_or_number_field(self):
         app = self.page("daily_page")
         self.assertEqual(["공고명 또는 번호"], [item.label for item in app.text_input])
         self.assertEqual(["개찰일"], [item.label for item in app.date_input])
-        self.assertEqual(["카테고리"], [item.label for item in app.selectbox])
+        self.assertEqual(["카테고리", "표시할 샘플"], [item.label for item in app.selectbox])
         for query in ("DEMO-001", "산책로"):
             app.text_input(key="daily_keyword").set_value(query)
             app.button(key="daily_search").click().run()
@@ -124,7 +180,7 @@ class BidPageJourneys(unittest.TestCase):
         app.button(key="daily_calculate").click().run()
         self.assertFalse(app.exception)
         self.assertEqual(first, app.session_state["daily_results"][0]["amount"])
-        self.assertTrue(any("고정 샘플" in item.value for item in app.info))
+        self.assertTrue(any("고정 샘플" in item.value for item in app.caption))
 
     def test_daily_handoff_applies_requested_date_and_clears_previous_results(self):
         app = self.page("daily_page")

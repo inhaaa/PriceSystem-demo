@@ -4,7 +4,7 @@ from datetime import date, datetime
 import streamlit as st
 
 from demo.ui import csv_bytes, done, money_columns, table
-from demo.workspace import open_tab
+from demo.workspace import open_daily_calculation, open_daily_notices
 
 
 def _table(rows, columns=None):
@@ -61,12 +61,13 @@ def categories(store):
 
 
 def _upload_panel(store, prefix, kind, pdf=False):
-    category = st.selectbox("업로드 카테고리 (선택사항)", ["선택 안 함", *store.categories()], key=f"{prefix}_category")
-    st.file_uploader("상세 PDF" if pdf else "Excel 파일 선택", type=["pdf"] if pdf else ["xlsx", "xls", "csv"],
-                     accept_multiple_files=True, key=f"{prefix}_files")
-    st.caption("실제 파일은 읽지 않습니다. 샘플 자료로 등록을 체험하세요.")
-    if st.button("샘플 불러오기", key=f"{prefix}_load_sample"):
-        st.session_state[f"{prefix}_preview"] = True
+    with st.container(key="registration_controls" if prefix == "current_excel" else f"{prefix}_controls"):
+        category = st.selectbox("업로드 카테고리 (선택사항)", ["선택 안 함", *store.categories()], key=f"{prefix}_category")
+        st.file_uploader("상세 PDF" if pdf else "Excel 파일 선택", type=["pdf"] if pdf else ["xlsx", "xls", "csv"],
+                         accept_multiple_files=True, key=f"{prefix}_files")
+        st.caption("실제 파일은 읽지 않습니다. 샘플 자료로 등록을 체험하세요.")
+        if st.button("샘플 불러오기", key=f"{prefix}_load_sample"):
+            st.session_state[f"{prefix}_preview"] = True
     if not st.session_state.get(f"{prefix}_preview"):
         return
     names = store.categories()
@@ -80,70 +81,81 @@ def _upload_panel(store, prefix, kind, pdf=False):
                "base_amount": amount, "deadline": date.today().isoformat(), "status": status, "memo": "화면 체험용 가상 자료"}
               for index, amount in enumerate((24000000, 37000000), 1)]
     filename = f"가상_{prefix}.{'pdf' if pdf else 'xlsx'}"
-    _table([{"번호": 1, "파일명": filename, "파일 유형": "PDF" if pdf else "Excel", "자료 구분": "데모 샘플"}])
-    selectable = [filename] if pdf else [row["code"] for row in sample]
-    selected = st.multiselect("연결할 PDF 선택" if pdf else "등록할 공고 선택", selectable,
-                             default=selectable, key=f"{prefix}_selection")
-    with st.expander(f"{filename} 미리보기", expanded=True):
-        _table(_notice_display(sample[:1] if pdf else sample))
-    target = None
-    if pdf:
-        st.markdown("**PDF 수기 연결**")
-        options = store.notices()
-        if not options:
-            st.info("연결할 공고를 먼저 등록해 주세요.")
-            return
-        target = st.selectbox("연결할 공고", [row["id"] for row in options],
-                              format_func=lambda item: next(f"{row['code']} | {row['title']}" for row in options if row['id'] == item),
-                              key=f"{prefix}_target")
-        st.checkbox("PDF 샘플과 선택 공고를 확인했습니다.", key=f"{prefix}_link_confirm")
-    label = "선택한 PDF 연결 — 선택 등록" if pdf else "선택한 공고 등록 — 선택 등록"
-    if st.button(label, key=f"{prefix}_register", disabled=not selected or (pdf and not st.session_state.get(f"{prefix}_link_confirm"))):
-        inserted = 0
-        skipped = 0
+    with st.container(key="registration_preview" if prefix == "current_excel" else f"{prefix}_preview_panel"):
+        st.caption("등록 미리보기 · 금액 단위: 원")
+        _table([{"번호": 1, "파일명": filename, "파일 유형": "PDF" if pdf else "Excel", "자료 구분": "데모 샘플"}])
+        selectable = [filename] if pdf else [row["code"] for row in sample]
+        selected = st.multiselect("연결할 PDF 선택" if pdf else "등록할 공고 선택", selectable,
+                                 default=selectable, key=f"{prefix}_selection")
+        with st.expander(f"{filename} 미리보기", expanded=True):
+            _table(_notice_display(sample[:1] if pdf else sample))
+        target = None
         if pdf:
-            links = st.session_state.setdefault("pdf_links", {}).setdefault(target, [])
-            for selected_file in selected:
-                if selected_file not in links:
-                    links.append(selected_file)
-                    inserted += 1
-                else:
-                    skipped += 1
-        else:
-            for row in sample:
-                if row["code"] not in selected:
-                    continue
-                if any(saved["code"] == row["code"] for saved in store.notices()):
-                    skipped += 1
-                else:
-                    archived = next((index for index, bundle in enumerate(st.session_state.get("notice_archive", []))
-                                     if bundle["notice"]["code"] == row["code"]), None)
-                    if archived is not None:
-                        _restore_notice(store, archived, selected_category)
+            st.markdown("**PDF 수기 연결**")
+            options = store.notices()
+            if not options:
+                st.info("연결할 공고를 먼저 등록해 주세요.")
+                return
+            target = st.selectbox("연결할 공고", [row["id"] for row in options],
+                                  format_func=lambda item: next(f"{row['code']} | {row['title']}" for row in options if row['id'] == item),
+                                  key=f"{prefix}_target")
+            st.checkbox("PDF 샘플과 선택 공고를 확인했습니다.", key=f"{prefix}_link_confirm")
+        label = "선택한 PDF 연결 — 선택 등록" if pdf else "선택한 공고 등록 — 선택 등록"
+        if st.button(label, key=f"{prefix}_register", disabled=not selected or (pdf and not st.session_state.get(f"{prefix}_link_confirm")),
+                     type="primary"):
+            inserted = 0
+            skipped = 0
+            if pdf:
+                links = st.session_state.setdefault("pdf_links", {}).setdefault(target, [])
+                for selected_file in selected:
+                    if selected_file not in links:
+                        links.append(selected_file)
+                        inserted += 1
                     else:
-                        notice_id = store.save_notice(row)
-                        if kind != "관심공고":
-                            store.save_result({"notice_id": notice_id, "outcome": "샘플 낙찰", "amount": 21500000, "note": "가상 개찰결과"})
-                    inserted += 1
-        result = {"업로드 유형": kind, "파일명": filename, "카테고리": selected_category,
-                  "전체 행 수": len(selected), "신규 등록": inserted, "중복 스킵": skipped, "오류": 0,
-                  "완료 일시": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        st.session_state.setdefault("upload_history", []).insert(0, result)
-        st.success(f"가상 자료 {inserted}건 등록, 중복 {skipped}건 건너뜀")
-        _table([result])
+                        skipped += 1
+            else:
+                for row in sample:
+                    if row["code"] not in selected:
+                        continue
+                    if any(saved["code"] == row["code"] for saved in store.notices()):
+                        skipped += 1
+                    else:
+                        archived = next((index for index, bundle in enumerate(st.session_state.get("notice_archive", []))
+                                         if bundle["notice"]["code"] == row["code"]), None)
+                        if archived is not None:
+                            _restore_notice(store, archived, selected_category)
+                        else:
+                            notice_id = store.save_notice(row)
+                            if kind != "관심공고":
+                                store.save_result({"notice_id": notice_id, "outcome": "샘플 낙찰", "amount": 21500000, "note": "가상 개찰결과"})
+                        inserted += 1
+            result = {"업로드 유형": kind, "파일명": filename, "카테고리": selected_category,
+                      "전체 행 수": len(selected), "신규 등록": inserted, "중복 스킵": skipped, "오류": 0,
+                      "완료 일시": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            st.session_state.setdefault("upload_history", []).insert(0, result)
+            st.success(f"가상 자료 {inserted}건 등록, 중복 {skipped}건 건너뜀")
+            _table([result])
+            if prefix == "current_excel":
+                st.session_state["current_excel_registered_opening"] = next(
+                    row["deadline"] for row in store.notices() if row["code"] in selected)
+        if prefix == "current_excel" and st.session_state.get("current_excel_registered_opening"):
+            st.button("등록 공고 조회", key="current_excel_open_notices", on_click=open_daily_notices,
+                      args=(st.session_state["current_excel_registered_opening"],))
 
 
 def uploads(store):
-    historical, current, result = st.tabs(["과거데이터", "관심공고", "개찰결과"])
+    current, historical, result = st.tabs(["관심공고", "과거데이터", "개찰결과"])
+    with current:
+        with st.container(key="interest_registration"):
+            st.caption("관심공고 등록 후 개찰일별로 조회하고 계산합니다.")
+            excel, pdf = st.tabs(["입찰서류함 엑셀", "상세 PDF"])
+            with excel:
+                _upload_panel(store, "current_excel", "관심공고")
+            with pdf:
+                _upload_panel(store, "current_pdf", "관심공고", pdf=True)
     with historical:
         st.caption("낙찰정보 엑셀을 과거 분석 데이터로 등록합니다.")
         _upload_panel(store, "historical", "과거데이터")
-    with current:
-        excel, pdf = st.tabs(["입찰서류함 엑셀", "상세 PDF"])
-        with excel:
-            _upload_panel(store, "current_excel", "관심공고")
-        with pdf:
-            _upload_panel(store, "current_pdf", "관심공고", pdf=True)
     with result:
         excel, pdf = st.tabs(["낙찰정보 엑셀", "결과 상세 PDF"])
         with excel:
@@ -236,7 +248,7 @@ def integrated(store):
         target = st.selectbox("상세 확인 공고", [row["id"] for row in rows],
                               format_func=lambda item: next(f"{row['code']} | {row['title']}" for row in rows if row['id'] == item),
                               key="notice_detail")
-        with st.expander("선택 공고 상세", expanded=True):
+        with st.expander("선택 공고 상세"):
             _detail(store, store.get_notice(target))
 
 
@@ -252,11 +264,6 @@ def _reset_daily_notices():
     st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
 
 
-def _open_daily_recommendations(opening):
-    st.session_state["daily_requested_date"] = opening
-    open_tab("daily_recommend")
-
-
 def _delete_daily_notices(store, targets, reason):
     for target in targets:
         row = store.get_notice(target)
@@ -270,67 +277,76 @@ def _delete_daily_notices(store, targets, reason):
 
 
 def daily_notices(store):
-    all_rows = store.notices()
-    default_date = date.fromisoformat(all_rows[0]["deadline"]) if all_rows else date.today()
-    left, right = st.columns([2, 1], vertical_alignment="bottom")
-    opening = left.date_input("개찰일", default_date, key="daily_notices_date", on_change=_reset_daily_notices)
-    if right.button("공고 조회", key="daily_notices_search", type="primary"):
-        _clear_delete_confirmation()
-        st.session_state["daily_notices_query"] = opening.isoformat()
-        st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
-    requested = st.session_state.get("daily_notices_query")
-    if not requested:
-        st.info("개찰일을 선택한 뒤 공고 조회를 누르세요.")
-        return
-    rows = [row for row in all_rows if row["deadline"] == requested]
-    st.caption(f"총 {len(rows):,}건")
-    if not rows:
-        st.info("조회 조건에 맞는 공고가 없습니다.")
-        return
-    saved = st.session_state.get("demo_recommendations", {})
-    unsaved = {row["notice_id"] for row in st.session_state.get("daily_results", [])}
-    current = st.session_state.get("recommendation_display") or {}
-    if current.get("notice_id"):
-        unsaved.add(current["notice_id"])
-    submissions = {row["notice_id"] for row in store.submissions()}
-    select_all = st.checkbox("전체 선택", key="daily_notices_select_all")
-    display = [{"선택": select_all, "공고번호": row["code"], "공고명": row["title"], "개찰일": row["deadline"],
-                "발주기관": row["agency"], "업종": row["category"], "기초금액": row["base_amount"], "업무 상태": row["status"],
-                "계산 이력": "저장된 계산 있음" if row["id"] in saved else "미저장 계산 있음" if row["id"] in unsaved else "없음",
-                "투찰기록": "있음" if row["id"] in submissions else "없음"} for row in rows]
-    edited = st.data_editor(display, hide_index=True, width="stretch", disabled=[key for key in display[0] if key != "선택"],
-                            column_config=money_columns(display[0]),
-                            key=f"daily_notices_editor_{st.session_state.get('daily_notices_revision', 0)}_{select_all}")
-    targets = tuple(row["id"] for row, edit in zip(rows, edited) if edit["선택"])
-    if st.session_state.get("daily_notices_pending") != targets:
-        _clear_delete_confirmation()
-    left, right = st.columns(2)
-    if left.button("선택 공고 삭제", key="daily_notices_delete", disabled=not targets):
-        st.session_state["daily_notices_pending"] = targets
-    right.button("이 날짜 추천계산으로 이동", key="daily_notices_recommend",
-                 on_click=_open_daily_recommendations, args=(opening,))
-    if not targets or st.session_state.get("daily_notices_pending") != targets:
-        return
-    selected = [row for row in rows if row["id"] in targets]
-    calculated = any(target in saved or target in unsaved for target in targets)
-    with st.container(border=True):
-        st.markdown("**공고 삭제 확인**")
-        _table(_notice_display(selected))
-        st.caption("삭제하면 관심공고와 추천계산 목록에서 제외됩니다. 저장된 추천·투찰·결과 이력은 보관됩니다.")
-        if calculated:
-            st.warning("이미 계산된 공고가 포함되어 있습니다. 삭제할 공고를 확인해 주세요.")
-        if any(target in unsaved and target not in saved for target in targets):
-            st.caption("저장하지 않은 계산 결과는 삭제됩니다.")
-        reason = st.selectbox("삭제 사유", ["사유 선택", "나라장터에서 취소·삭제됨", "중복 등록", "참여하지 않음", "기타"],
-                              key="daily_notices_reason")
-        if reason == "기타":
-            reason = st.text_input("기타 사유", key="daily_notices_other_reason").strip()
-        acknowledged = st.checkbox("계산 이력이 있는 공고의 삭제에 동의합니다.", key="daily_notices_ack") if calculated else True
-        left, right = st.columns(2)
-        left.button(f"{len(targets)}건 삭제 확정", key="daily_notices_confirm",
-                    disabled=not acknowledged or not reason or reason == "사유 선택",
-                    on_click=_delete_daily_notices, args=(store, targets, reason))
-        right.button("취소", key="daily_notices_cancel", on_click=_clear_delete_confirmation)
+    with st.container(key="notice_workbench"):
+        all_rows = store.notices()
+        default_opening = st.session_state.get("daily_notices_query") or (
+            all_rows[0]["deadline"] if all_rows else date.today().isoformat())
+        st.session_state.setdefault("daily_notices_date", date.fromisoformat(default_opening))
+        left, right = st.columns([2, 1], vertical_alignment="bottom")
+        opening = left.date_input("개찰일", key="daily_notices_date", on_change=_reset_daily_notices)
+        if right.button("공고 조회", key="daily_notices_search", type="primary"):
+            _clear_delete_confirmation()
+            st.session_state["daily_notices_query"] = opening.isoformat()
+            st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
+        requested = st.session_state.get("daily_notices_query")
+        if not requested:
+            st.info("개찰일을 선택한 뒤 공고 조회를 누르세요.")
+            return
+        rows = [row for row in all_rows if row["deadline"] == requested]
+        if not rows:
+            st.info("조회 조건에 맞는 공고가 없습니다.")
+            return
+        saved = st.session_state.get("demo_recommendations", {})
+        unsaved = {row["notice_id"] for row in st.session_state.get("daily_results", [])}
+        current = st.session_state.get("recommendation_display") or {}
+        if current.get("notice_id"):
+            unsaved.add(current["notice_id"])
+        listing, actions = st.columns([4, 1.3], gap="medium")
+        with listing:
+            with st.container(key="notice_list_panel"):
+                st.caption(f"총 {len(rows):,}건 · 금액 단위: 원")
+                select_all = st.checkbox("전체 선택", key="daily_notices_select_all")
+                display = [{"선택": select_all, "공고번호": row["code"], "공고명": row["title"],
+                            "기초금액": row["base_amount"], "개찰일": row["deadline"],
+                            "계산 이력": "저장된 계산 있음" if row["id"] in saved else "미저장 계산 있음" if row["id"] in unsaved else "없음"}
+                           for row in rows]
+                edited = st.data_editor(display, hide_index=True, width="stretch", disabled=[key for key in display[0] if key != "선택"],
+                                        column_config=money_columns(display[0]),
+                                        key=f"daily_notices_editor_{st.session_state.get('daily_notices_revision', 0)}_{select_all}")
+                targets = tuple(row["id"] for row, edit in zip(rows, edited) if edit["선택"])
+                if st.session_state.get("daily_notices_pending") != targets:
+                    _clear_delete_confirmation()
+        with actions:
+            with st.container(key="notice_action_panel", border=False):
+                st.markdown("**실행**")
+                st.caption(f"{requested} · 조회 {len(rows):,}건")
+                st.caption(f"선택 {len(targets):,}건")
+                st.button("이 날짜 추천계산으로 이동", key="daily_notices_recommend", type="primary", width="stretch",
+                          on_click=open_daily_calculation, args=(date.fromisoformat(requested),))
+                if st.button("선택 공고 삭제", key="daily_notices_delete", disabled=not targets, width="stretch"):
+                    st.session_state["daily_notices_pending"] = targets
+        if not targets or st.session_state.get("daily_notices_pending") != targets:
+            return
+        selected = [row for row in rows if row["id"] in targets]
+        calculated = any(target in saved or target in unsaved for target in targets)
+        with st.container(border=True):
+            st.markdown("**공고 삭제 확인**")
+            _table(_notice_display(selected))
+            st.caption("삭제하면 관심공고와 추천계산 목록에서 제외됩니다. 저장된 추천·투찰·결과 이력은 보관됩니다.")
+            if calculated:
+                st.warning("이미 계산된 공고가 포함되어 있습니다. 삭제할 공고를 확인해 주세요.")
+            if any(target in unsaved and target not in saved for target in targets):
+                st.caption("저장하지 않은 계산 결과는 삭제됩니다.")
+            reason = st.selectbox("삭제 사유", ["사유 선택", "나라장터에서 취소·삭제됨", "중복 등록", "참여하지 않음", "기타"],
+                                  key="daily_notices_reason")
+            if reason == "기타":
+                reason = st.text_input("기타 사유", key="daily_notices_other_reason").strip()
+            acknowledged = st.checkbox("계산 이력이 있는 공고의 삭제에 동의합니다.", key="daily_notices_ack") if calculated else True
+            left, right = st.columns(2)
+            left.button(f"{len(targets)}건 삭제 확정", key="daily_notices_confirm",
+                        disabled=not acknowledged or not reason or reason == "사유 선택",
+                        on_click=_delete_daily_notices, args=(store, targets, reason))
+            right.button("취소", key="daily_notices_cancel", on_click=_clear_delete_confirmation)
 
 
 def query(store):

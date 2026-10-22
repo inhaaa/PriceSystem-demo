@@ -10,6 +10,7 @@ def page_header_html(title: object, description: object, eyebrow: object) -> str
 
     return (
         '<header class="page-header">'
+        '<span class="page-header__rule" aria-hidden="true"></span>'
         '<div class="page-header__body">'
         f'<div class="page-header__eyebrow">{escape(str(eyebrow))}</div>'
         f'<h1 class="page-header__title">{escape(str(title))}</h1>'
@@ -24,57 +25,34 @@ def sidebar_brand_html() -> str:
 
     return (
         '<div class="sidebar-brand">'
-        '<img class="sidebar-brand__mark" src="./app/static/login-diamond-mini.svg" '
+        '<img class="sidebar-brand__mark" src="./app/static/brand-mark.svg" '
         'width="43" height="43" alt="" aria-hidden="true" decoding="async">'
         '<div class="sidebar-brand__copy">'
-        '<div class="sidebar-brand__name" style="font-size:1.15rem;letter-spacing:.02em">PriceSystem</div>'
-        '<div class="sidebar-brand__tagline">입찰가격 분석 <span class="demo-badge">DEMO</span></div>'
+        '<div class="sidebar-brand__name">PriceSystem</div>'
+        '<div class="sidebar-brand__tagline">입찰가격선정시스템 <span class="demo-badge">DEMO</span></div>'
         "</div>"
         "</div>"
     )
 
 
 def login_panel_html(wordmark: object, tagline: object, phrase: object) -> str:
-    """Build a masthead and an in-flow diamond stage above the sign-in form."""
+    """Build a compact, escaped product identity above the native login form."""
 
-    particles = "".join(
-        '<span class="login-atmosphere__particle" '
-        f'style="--x:{(i * 37 + 7) % 100}%;--y:{(i * 29 + 11) % 100}%;'
-        f'--delay:{-i * 1.7}s;--duration:{18 + i % 7 * 3}s;'
-        f'--size:{1 + i % 3}px"></span>'
-        for i in range(18)
-    )
+    description = str(phrase) if phrase else "공고와 투찰 내역을 한곳에서 관리합니다."
     return (
-        '<div class="login-atmosphere" hidden aria-hidden="true">'
-        '<img class="login-atmosphere__architecture" src="./app/static/diamond-chamber.svg" '
-        'alt="" draggable="false" decoding="async"/>'
-        '<div class="login-atmosphere__light"></div>'
-        f'<div class="login-atmosphere__field">{particles}</div>'
-        '<span class="login-panel__cursor"></span>'
-        '</div>'
+        '<section class="login-panel" aria-labelledby="login-product-title">'
         '<header class="login-masthead">'
         '<div class="login-panel__identity">'
-        '<svg class="login-panel__symbol" width="21" height="21" '
-        'viewBox="0 0 32 32" aria-hidden="true">'
-        '<path d="M7 6h18l6 9-15 17L1 15Z M1 15h30 M7 6l9 26L25 6 M7 6l9 9 9-9" '
-        'fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>'
-        '</svg>'
-        f'<p class="login-panel__wordmark">{escape(str(wordmark))}</p>'
-        '</div>'
+        '<img class="login-panel__symbol" src="./app/static/brand-mark.svg" '
+        'width="34" height="34" alt="" aria-hidden="true" decoding="async">'
+        '<div class="login-panel__identity-copy">'
+        f'<h1 class="login-panel__wordmark" id="login-product-title">{escape(str(wordmark))}</h1>'
         f'<p class="login-panel__tagline">{escape(str(tagline))}</p>'
-        '</header>'
-        '<section class="login-panel" aria-label="회전하는 다이아몬드">'
-        '<span class="login-panel__axis" aria-hidden="true"></span>'
-        '<span class="login-panel__halo" aria-hidden="true"></span>'
-        '<div class="login-gem" hidden aria-hidden="true">'
-        '<div class="login-gem__stage"><div class="login-gem__spin">'
-        '<div class="login-gem__crown"><i></i><i></i><i></i><i></i></div>'
-        '<div class="login-gem__pavilion"><i></i><i></i><i></i><i></i></div>'
-        '</div></div></div>'
-        '<div class="login-panel__caption">'
-        '<p class="login-panel__interaction">'
-        '<span aria-hidden="true">↔</span> 드래그하여 다른 각도로 바라보세요</p>'
         '</div>'
+        '</div>'
+        '<span class="login-panel__edition">DEMO</span>'
+        '</header>'
+        f'<p class="login-panel__description">{escape(description)}</p>'
         '</section>'
     )
 
@@ -100,7 +78,10 @@ def home_action_card_html(
     return (
         '<article class="home-action-card">'
         f'<div class="{content_class}">'
-        f'<span class="material-symbols-rounded" aria-hidden="true">{_material_icon_name(icon)}</span>'
+        '<div class="home-action-card__topline">'
+        f'<span class="home-action-card__label">{"분석 시작" if featured else "업무 바로가기"}</span>'
+        f'<span class="home-action-card__arrow material-symbols-rounded" aria-hidden="true">{_material_icon_name(icon)}</span>'
+        '</div>'
         f'<h3 class="home-action-card__title">{escape(str(title))}</h3>'
         f'<p class="home-action-card__description">{escape(str(description))}</p>'
         "</div>"

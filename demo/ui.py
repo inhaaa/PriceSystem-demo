@@ -7,8 +7,6 @@ import streamlit as st
 
 from demo.visual_components import (
     home_action_card_html,
-    login_cursor_glow_script,
-    login_gem_webgl_script,
     login_panel_html,
     page_header_html,
     sidebar_brand_html,
@@ -52,8 +50,8 @@ def header(title, description, eyebrow=""):
 
 def hero():
     st.markdown(
-        '<section class="home-launcher"><h2>입찰가격 분석</h2>'
-        '<p>데이터의 여러 면을 읽고, 판단을 선명하게.</p></section>',
+        '<section class="home-launcher"><h2>입찰의 기준을 세우는 일.</h2>'
+        '<p>공고를 검토하고, 가격을 비교하고, 다음 입찰을 준비합니다.</p></section>',
         unsafe_allow_html=True,
     )
 
@@ -63,26 +61,25 @@ def card(number, title, description):
 
 
 def render_login_page() -> tuple[str, str, bool]:
-    """Render the original visual flow with public demo account guidance."""
+    """제품 안내와 native 로그인 폼을 간결한 진입 화면으로 연결한다."""
     apply_theme(login=True)
-    st.markdown(login_panel_html("PriceSystem", "입찰가격 분석 · DEMO", ""), unsafe_allow_html=True)
+    st.markdown(login_panel_html("PriceSystem", "입찰가격선정시스템",
+                                "공고와 투찰 내역을 한곳에서 관리합니다."), unsafe_allow_html=True)
     with st.form("login_form"):
         st.markdown('<div id="login-card-root"></div>', unsafe_allow_html=True)
         st.markdown(
-            '<div class="login-brand"><span class="login-brand__eyebrow" '
-            'draggable="false">PRECISION IN EVERY FACET</span></div>',
+            '<div class="login-brand"><h2>로그인</h2>'
+            '<p class="login-brand__eyebrow">계정 정보를 입력해 주세요.</p></div>',
             unsafe_allow_html=True,
         )
         username = st.text_input("아이디", key="login_username")
         password = st.text_input("비밀번호", type="password", key="login_password")
-        submitted = st.form_submit_button("로그인", key="login_submit", use_container_width=True)
+        submitted = st.form_submit_button("로그인", key="login_submit", type="primary", use_container_width=True)
     st.markdown(
         '<div class="login-access-footer"><span>데모 계정: admin / admin</span>'
-        '<span>가상 데이터로 자유롭게 체험해 보세요.</span></div>',
+        '<span>가상 데이터로 입찰 업무를 둘러볼 수 있습니다.</span></div>',
         unsafe_allow_html=True,
     )
-    st.html(login_cursor_glow_script(), unsafe_allow_javascript=True)
-    st.html(login_gem_webgl_script(), unsafe_allow_javascript=True)
     return username, password, submitted
 
 

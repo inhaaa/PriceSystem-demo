@@ -8,6 +8,8 @@ from urllib.parse import urljoin
 from streamlit.testing.v1 import AppTest
 
 from demo import ui
+from demo.visual_components import login_panel_html, sidebar_brand_html
+from demo.workspace_theme import WORKSPACE_THEME_CSS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,12 +46,14 @@ class VisualStructureTests(unittest.TestCase):
     def test_mobile_sidebar_and_header_have_opaque_backgrounds(self):
         theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
         mobile = theme.split('@media (max-width: 768px) {')
-        for scope, color in (("__SCOPE__", "#111"), ("__LIGHT__", "#ffffff")):
+        # 공통 업무 scope의 불투명 표면이 두 팔레트에 모두 적용된다.
+        for scope in ("__SCOPE__",):
             for surface in ("stSidebar", "stHeader"):
                 rule = re.escape(scope + ' [data-testid="' + surface + '"]')
                 matches = [re.search(rule + r'\s*\{([^}]+)\}', block) for block in mobile[1:]]
                 styles = [match.group(1) for match in matches if match]
-                self.assertTrue(any(f"background: {color};" in style for style in styles),
+                self.assertTrue(any(re.search(r"background:\s*(?:#[0-9a-f]{3,6}|var\(--ps-[\w-]+\));", style)
+                                    for style in styles),
                                 f"{scope} {surface} must cover content underneath on mobile")
 
     def test_primary_and_disabled_buttons_have_readable_text_in_both_themes(self):
@@ -73,13 +77,13 @@ class VisualStructureTests(unittest.TestCase):
 
     def test_primary_theme_rules_cover_form_buttons_and_preserve_disabled_styles(self):
         theme = (ROOT / "demo/workspace_theme.py").read_text(encoding="utf-8")
-        for scope in ("__SCOPE__", "__LIGHT__"):
+        for scope in ("__SCOPE__",):
             rule = re.search(re.escape(scope) + r' \[data-testid="stButton"\] button\[kind="primary"\][^{]+\{', theme).group()
             with self.subTest(scope=scope):
                 self.assertIn('[kind="primaryFormSubmit"]', rule)
                 self.assertEqual(rule.count(":not(:disabled)"), 2)
 
-    def test_login_preserves_the_single_diamond_and_form_flow(self):
+    def test_login_preserves_native_form_flow_without_animation_mounts(self):
         self.assertTrue(callable(getattr(ui, "render_login_page", None)), "Login renderer is missing")
         app = AppTest.from_string(
             "from demo.ui import render_login_page\nrender_login_page()"
@@ -93,14 +97,20 @@ class VisualStructureTests(unittest.TestCase):
         self.assertIn('id="login-card-root"', markup)
         self.assertIn("admin / admin", markup)
         self.assertLess(markup.index('class="login-panel"'), markup.index('id="login-card-root"'))
+        source = (ROOT / "demo/ui.py").read_text(encoding="utf-8")
+        self.assertNotIn("login_cursor_glow_script", source)
+        self.assertNotIn("login_gem_webgl_script", source)
 
     def test_workspace_keeps_both_palettes_and_original_layout_hooks(self):
         theme_file = ROOT / "demo/workspace_theme.py"
         self.assertTrue(theme_file.is_file(), "Workspace theme is missing")
         theme = theme_file.read_text(encoding="utf-8")
         for hook in ("workspace-theme-marker", "workspace_masthead", "workspace_surface",
-                     "internal_tab_bar", "data-ps-theme", "workspace-crystal.svg", "diamond-chamber.svg"):
+                     "internal_tab_bar", "data-ps-theme"):
             self.assertIn(hook, theme)
+        self.assertNotIn("workspace-crystal.svg", WORKSPACE_THEME_CSS)
+        self.assertNotIn("diamond-chamber.svg", WORKSPACE_THEME_CSS)
+        self.assertNotIn("mountWorkspaceGlimmer", theme)
         app = AppTest.from_string(
             "from demo.ui import apply_theme, brand, header\n"
             "apply_theme()\nbrand()\nheader('샘플 제목', '샘플 설명', '데이터 업무')"
@@ -110,14 +120,17 @@ class VisualStructureTests(unittest.TestCase):
     def test_visual_dependencies_are_local_and_complete(self):
         components = ROOT / "demo/visual_components.py"
         self.assertTrue(components.is_file(), "Visual components are missing")
-        sources = [components, ROOT / "demo/workspace_theme.py", ROOT / "assets/demo.css", ROOT / "assets/login.css"]
-        source = "\n".join(path.read_text(encoding="utf-8") for path in sources)
+        source = "\n".join((sidebar_brand_html(), login_panel_html("PriceSystem", "데모", "입찰 업무"),
+                             (ROOT / "demo/workspace.py").read_text(encoding="utf-8"), WORKSPACE_THEME_CSS,
+                             (ROOT / "assets/demo.css").read_text(encoding="utf-8"),
+                             (ROOT / "assets/login.css").read_text(encoding="utf-8")))
         urls = set(re.findall(r'(?:\./|/)?app/static/[A-Za-z0-9_./-]+', source))
         for base in ("https://example.invalid/", "https://example.invalid/~/+/"):
             for url in urls:
                 self.assertTrue(urljoin(base, url).startswith(base + "app/static/"), url)
         assets = {url.split("app/static/", 1)[1] for url in urls}
-        self.assertGreaterEqual(len(assets), 6)
+        self.assertIn("brand-mark.svg", assets)
+        self.assertNotIn("price-bands.svg", assets)
         for relative in assets:
             self.assertTrue((ROOT / "static" / relative).is_file(), relative)
         for name in ("login-atmosphere.js", "diamond-optics.js"):

@@ -28,6 +28,9 @@ assets/*
 !assets/workspace.svg
 !static/
 static/*
+!static/brand-mark.svg
+!static/price-bands.svg
+!static/release.txt
 !static/diamond-chamber.svg
 !static/diamond-optics.js
 !static/login-atmosphere.js

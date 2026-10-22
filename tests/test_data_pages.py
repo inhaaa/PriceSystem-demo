@@ -69,7 +69,7 @@ class DataPageJourneys(unittest.TestCase):
 
     def test_original_upload_tabs_and_simple_sample_registration(self):
         app = self.page('uploads')
-        self.assertEqual([tab.label for tab in app.tabs], ['과거데이터', '관심공고', '입찰서류함 엑셀', '상세 PDF', '개찰결과', '낙찰정보 엑셀', '결과 상세 PDF'])
+        self.assertEqual([tab.label for tab in app.tabs], ['관심공고', '입찰서류함 엑셀', '상세 PDF', '과거데이터', '개찰결과', '낙찰정보 엑셀', '결과 상세 PDF'])
         count = len(app.session_state['store'].notices())
         app.button(key='current_excel_load_sample').click().run()
         self.assertTrue(any('선택 등록' in button.label for button in app.button))

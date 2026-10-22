@@ -1,4 +1,6 @@
 """PriceSystem: 원본의 업무 화면과 독립적인 가상 데이터 체험."""
+from pathlib import Path
+
 import streamlit as st
 
 from demo import bid_pages, data_pages, workspace
@@ -33,7 +35,8 @@ def restart(logout=False):
 
 
 def main():
-    st.set_page_config(page_title="PriceSystem · Demo", page_icon="💎", layout="wide")
+    st.set_page_config(page_title="PriceSystem · 입찰가격선정시스템",
+                       page_icon=str(Path(__file__).parent / "assets" / "logo.svg"), layout="wide")
     if not st.session_state.get("authenticated"):
         username, password, submitted = render_login_page()
         if submitted:
@@ -50,13 +53,12 @@ def main():
     workspace.sidebar(restart)
     active = st.session_state.get("active_tab", "")
     if not active:
-        workspace.render_home()
+        workspace.render_home(st.session_state["store"])
         if message := st.session_state.pop("flash", None):
             st.success(message)
         return
     workspace.masthead(active)
     with st.container(key="workspace_surface"):
-        st.caption("DEMO · 가상 데이터로 체험 중입니다.")
         if message := st.session_state.pop("flash", None):
             st.success(message)
         HANDLERS[active](st.session_state["store"])

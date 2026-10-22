@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 360" fill="none">
+  <title>PriceSystem 장식용 가격 밴드 모티프</title>
+  <path d="M32 40h616M32 110h616M32 180h616M32 250h616M32 320h616" stroke="#f5f4ed" stroke-opacity=".2"/>
+  <path d="M68 32v296M206 32v296M344 32v296M482 32v296M620 32v296" stroke="#f5f4ed" stroke-opacity=".08"/>
+  <path d="M56 98h240v24H56z" fill="#f5f4ed" fill-opacity=".82"/>
+  <path d="M150 168h360v24H150z" fill="#8eaa92"/>
+  <path d="M322 238h240v24H322z" fill="#f5f4ed" fill-opacity=".82"/>
+  <path d="M56 88v44M296 88v44M150 158v44M510 158v44M322 228v44M562 228v44" stroke="#f5f4ed" stroke-opacity=".7"/>
+  <path d="M418 24v312" stroke="#d4ed76" stroke-width="2"/>
+  <path d="M406 24h24M406 336h24" stroke="#d4ed76" stroke-width="2"/>
+  <circle cx="418" cy="180" r="15" fill="#173b31"/>
+  <circle cx="418" cy="180" r="8" fill="#d4ed76"/>
+  <path d="M32 36v8M32 106v8M32 176v8M32 246v8M32 316v8M648 36v8M648 106v8M648 176v8M648 246v8M648 316v8" stroke="#f5f4ed" stroke-opacity=".55"/>
+</svg>

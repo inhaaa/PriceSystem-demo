@@ -40,6 +40,16 @@ class AppJourneys(unittest.TestCase):
         self.assertTrue(app.error)
         self.assertEqual(len(app.radio), 0)
 
+    def test_home_has_working_notice_shortcut_and_session_summary(self):
+        app = self.login(self.new_app())
+        markup = "\n".join(item.value for item in app.markdown)
+        self.assertIn('개찰 일정', markup)
+        self.assertIn('등록 공고 기준', markup)
+        app.button(key="home_day_notices_2026-10-03").click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(app.session_state["active_tab"], "daily_notices")
+
+
     def test_every_page_renders_without_errors(self):
         app = self.login(self.new_app())
         for page in PAGES:
@@ -52,7 +62,7 @@ class AppJourneys(unittest.TestCase):
         self.assertEqual(len(app.radio), 0)
         self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 10)
         app.button(key="menu_open_data_upload").click().run()
-        self.assertEqual([tab.label for tab in app.tabs], ["과거데이터", "관심공고", "입찰서류함 엑셀", "상세 PDF", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
+        self.assertEqual([tab.label for tab in app.tabs], ["관심공고", "입찰서류함 엑셀", "상세 PDF", "과거데이터", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
         app.button(key="menu_open_daily_recommend").click().run()
         self.assertEqual(app.session_state["open_tabs"], ["data_upload", "daily_recommend"])
         app.button(key="tab_close_daily_recommend").click().run()
@@ -71,6 +81,7 @@ class AppJourneys(unittest.TestCase):
         app.button(key="reset_samples").click().run()
         self.assertEqual(len(app.session_state["store"].notices()), initial)
         self.assertFalse(app.session_state["store"].notices(query="DEMO-CURRENT_EXCEL"))
+
 
     def test_visitors_and_logout_are_isolated(self):
         first = self.login(self.new_app())
@@ -106,7 +117,7 @@ class AppJourneys(unittest.TestCase):
     def test_analysis_and_api_are_explicit_samples(self):
         app = self.login(self.new_app())
         app.button(key="menu_open_daily_recommend").click().run()
-        self.assertTrue(any("샘플" in str(item.value) for item in app.info))
+        self.assertTrue(any("샘플" in str(item.value) for item in app.caption))
         app.button(key="menu_open_g2b_api").click().run()
         app.selectbox(key="api_scenario").set_value("오류").run()
         app.button(key="api_preview").click().run()

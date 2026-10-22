@@ -1,5 +1,6 @@
 """Original workflow layouts backed only by newly written demo data."""
 from datetime import date
+from html import escape
 
 import pandas as pd
 import streamlit as st
@@ -58,20 +59,15 @@ def _date_range(rows, prefix, label):
 
 
 def daily_page(store):
-    user_tab, backtest_tab = st.tabs(["사용자용 추천계산", "백테스트"])
-    with user_tab:
-        _daily_recommendations(store)
-    with backtest_tab:
+    _daily_recommendations(store)
+    with st.expander("백테스트 샘플"):
         st.info(backtest_sample()["note"])
         if st.button("백테스트 샘플 보기", type="primary", key="backtest_show"):
             st.session_state["backtest_visible"] = True
         if st.session_state.get("backtest_visible"):
             view = backtest_sample()["rows"]
             won = sum(row["결과"] == "낙찰" for row in view)
-            a, b, c = st.columns(3)
-            a.metric("검증 공고 · 샘플", f"{len(view)}건")
-            b.metric("낙찰 · 샘플", f"{won}건")
-            c.metric("낙찰률 · 샘플", f"{won / len(view):.0%}")
+            st.caption(f"검증 공고 {len(view)}건 · 낙찰 {won}건 · 낙찰률 {won / len(view):.0%} · 고정 샘플")
             _recommendation_table(view)
             st.download_button("백테스트 샘플 다운로드", _csv(view), "demo-backtest.csv", "text/csv")
 
@@ -79,11 +75,15 @@ def daily_page(store):
 def _recommendation_table(view):
     frame = pd.DataFrame(view)
     styled = frame.style.set_properties(subset=["추천 금액 (원)"],
-                                        **{"background-color": "#fff7cc", "color": "#292824", "font-weight": "700"})
+                                        **{"background-color": "#eaf0e8", "color": "#183f32", "font-weight": "700"})
     st.dataframe(styled, hide_index=True, width="stretch", column_config={
-        **money_columns(frame.columns),
-        "실투찰율 (%)": st.column_config.NumberColumn(format="%.2f%%"),
-        "신뢰도 (%)": st.column_config.NumberColumn(format="%.1f%%"),
+        **{name: st.column_config.NumberColumn(format="localized", alignment="right", width="medium")
+           for name in frame.columns if "금액" in name},
+        "공고번호": st.column_config.TextColumn(width="small"),
+        "공고명": st.column_config.TextColumn(width="large"),
+        "실투찰율 (%)": st.column_config.NumberColumn(format="%.2f%%", alignment="right", width="small"),
+        "신뢰도 (%)": st.column_config.NumberColumn(format="%.1f%%", alignment="right", width="small"),
+        "저장 상태": st.column_config.TextColumn(width="small"),
     })
 
 
@@ -96,12 +96,15 @@ def _daily_recommendations(store):
         st.session_state["daily_category"] = "전체"
         st.session_state["daily_keyword"] = ""
         st.session_state["daily_select_all"] = True
-    st.info(DEMO_NOTE)
+    st.caption(DEMO_NOTE)
     rows = store.notices()
     if not rows:
         st.info("공고를 먼저 등록해 주세요.")
         return
-    st.session_state.setdefault("daily_date", date.fromisoformat(rows[0]["deadline"]))
+    previous_query = st.session_state.get("daily_query", {})
+    st.session_state.setdefault("daily_date", date.fromisoformat(previous_query.get("deadline", rows[0]["deadline"])))
+    st.session_state.setdefault("daily_category", previous_query.get("category", "전체"))
+    st.session_state.setdefault("daily_keyword", previous_query.get("keyword", ""))
     with st.form("daily_search_form"):
         a, b, c = st.columns([1, 1, 2])
         opening = a.date_input("개찰일", key="daily_date")
@@ -114,72 +117,102 @@ def _daily_recommendations(store):
         for key in ("daily_confirmed", "daily_results", "daily_result_selection"):
             st.session_state.pop(key, None)
     query = st.session_state.get("daily_query")
-    if not query:
-        st.info("개찰일을 선택하고 공고를 조회해 주세요.")
-        return
-    rows = [row for row in rows if row["deadline"] == query["deadline"]
+    rows = [row for row in rows if query and row["deadline"] == query["deadline"]
             and (query["category"] == "전체" or row["category"] == query["category"])
             and _matches(row, query.get("keyword", ""))]
-    st.subheader(f"조회 공고 · {len(rows)}건")
-    if not rows:
-        st.info("조회 조건에 맞는 공고가 없습니다.")
-        return
-    st.session_state.setdefault("daily_select_all", True)
-    all_selected = st.checkbox("전체 선택", key="daily_select_all")
-    selection = pd.DataFrame([{"선택": all_selected, "id": row["id"], "공고번호": row["code"], "공고명": row["title"],
-                               "발주기관": row["agency"], "카테고리": row["category"], "지역": row["region"],
-                               "기초금액": row["base_amount"], "개찰일": row["deadline"]} for row in rows])
-    editor = st.data_editor(selection, hide_index=True, width="stretch",
-                            disabled=[column for column in selection.columns if column != "선택"],
-                            column_config={**money_columns(selection.columns), "id": None, "선택": st.column_config.CheckboxColumn()},
-                            key=f"daily_editor_{st.session_state.get('daily_query_revision', 0)}_{all_selected}")
-    selected_ids = tuple(int(value) for value in editor.loc[editor["선택"], "id"])
-    selected_rows = [row for row in rows if row["id"] in selected_ids]
-    st.caption(f"선택한 공고 {len(selected_rows)}건")
-    if st.button("선택 공고 샘플 확인", disabled=not selected_rows, key="daily_check"):
-        st.session_state["daily_confirmed"] = selected_ids
-    confirmed = bool(selected_ids) and st.session_state.get("daily_confirmed") == selected_ids
-    if confirmed:
-        st.success("선택한 공고를 확인했습니다.")
-    scenario = st.selectbox("표시할 샘플", SCENARIOS, key="daily_scenario")
-    auto_save = st.checkbox("결과 자동 저장", value=True, key="daily_auto_save")
-    if st.button("선택 공고 추천계산", type="primary", disabled=not confirmed, key="daily_calculate"):
-        results = [_sample_row(row, scenario) for row in selected_rows]
-        st.session_state["daily_results"] = results
-        st.session_state["daily_result_selection"] = selected_ids
-        if auto_save:
-            _remember(results)
-    results = st.session_state.get("daily_results", [])
-    if not results or st.session_state.get("daily_result_selection") != selected_ids:
-        return
-    st.subheader("추천 결과")
-    saved = st.session_state.get("demo_recommendations", {})
-    for column, label, count in zip(st.columns(3), ["조회 공고", "샘플 결과", "저장 완료"],
-                                     [len(rows), len(results), sum(saved.get(row["notice_id"]) == row for row in results)]):
-        column.metric(label, f"{count}건")
-    view = [{"공고번호": row["code"], "공고명": row["title"], "샘플": row["scenario"], "추천 금액 (원)": row["amount"],
-             "실투찰율 (%)": recommendation(row["scenario"])["bid_rate"],
-             "신뢰도 (%)": recommendation(row["scenario"])["confidence"],
-             "저장 상태": "저장 완료" if saved.get(row["notice_id"]) == row else "저장 가능"} for row in results]
-    selected = results[0]
-    if len(results) > 1:
-        lookup = {row["notice_id"]: row for row in results}
-        selected_id = st.selectbox("추천 결과 공고", list(lookup), key="daily_result_notice",
-                                   format_func=lambda value: f'{lookup[value]["code"]} · {lookup[value]["title"]}')
-        selected = lookup[selected_id]
-    sample = recommendation(selected["scenario"])
-    a, b, c = st.columns([2, 1, 1])
-    with a:
-        st.markdown(f'<div class="recommendation-amount"><span>추천금액 · 샘플</span>'
-                    f'<strong>{selected["amount"]:,}원</strong></div>', unsafe_allow_html=True)
-    b.metric("실투찰율 · 샘플", f'{sample["bid_rate"]:.2f}%')
-    c.metric("신뢰도 · 샘플", f'{sample["confidence"]:.1f}%')
-    st.caption("금액·실투찰율·신뢰도는 서로 독립적인 가상 표시값이며 실제 계산·평가 결과가 아닙니다.")
-    _recommendation_table(view)
-    if st.button("결과 저장", key="daily_save_all"):
-        _remember(results)
-        done("샘플 결과를 저장했습니다.")
-    st.download_button("추천 결과 다운로드", _csv(view), "demo-daily.csv", "text/csv")
+    selected_ids, selected_rows, results = (), [], []
+    with st.container(key="daily_workspace"):
+        notices_column, result_column = st.columns([2.6, 1], gap="medium")
+        with notices_column:
+            with st.container(key="daily_notice_panel"):
+                st.subheader(f"조회 공고 · {len(rows)}건")
+                if not query:
+                    st.info("개찰일을 선택하고 공고를 조회해 주세요.")
+                elif not rows:
+                    st.info("조회 조건에 맞는 공고가 없습니다.")
+                else:
+                    st.session_state.setdefault("daily_select_all", True)
+                    all_selected = st.checkbox("전체 선택", key="daily_select_all")
+                    selection = pd.DataFrame([{"선택": all_selected, "id": row["id"], "공고명": row["title"],
+                                               "기초금액": row["base_amount"], "공고번호": row["code"],
+                                               "개찰일": row["deadline"]} for row in rows])
+                    editor = st.data_editor(selection, hide_index=True, width="stretch",
+                                            disabled=[column for column in selection.columns if column != "선택"],
+                                            column_order=["선택", "공고명", "기초금액", "공고번호", "개찰일"],
+                                            column_config={
+                                                "id": None,
+                                                "선택": st.column_config.CheckboxColumn(width="small"),
+                                                "공고명": st.column_config.TextColumn(width="medium"),
+                                                "기초금액": st.column_config.NumberColumn("기초금액 (원)", format="localized", alignment="right", width="small"),
+                                                "공고번호": st.column_config.TextColumn(width="small"),
+                                                "개찰일": st.column_config.TextColumn(width="small"),
+                                            },
+                                            key=f"daily_editor_{st.session_state.get('daily_query_revision', 0)}_{all_selected}")
+                    selected_ids = tuple(int(value) for value in editor.loc[editor["선택"], "id"])
+                    selected_rows = [row for row in rows if row["id"] in selected_ids]
+        with result_column:
+            result_slot = st.container(key="daily_result_panel", border=False)
+            with st.container(key="daily_controls", border=False):
+                st.subheader("계산 실행")
+                st.caption(f"선택 공고 {len(selected_rows)}건 · 금액 단위: 원")
+                if st.button("선택 공고 확인", disabled=not selected_rows, key="daily_check", width="stretch"):
+                    st.session_state["daily_confirmed"] = selected_ids
+                confirmed = bool(selected_ids) and st.session_state.get("daily_confirmed") == selected_ids
+                if confirmed:
+                    st.caption("선택 확인 완료")
+                scenario = st.selectbox("표시할 샘플", SCENARIOS, key="daily_scenario")
+                auto_save = st.checkbox("결과 자동 저장", value=True, key="daily_auto_save")
+                if st.button("선택 공고 계산", type="primary", disabled=not confirmed, key="daily_calculate", width="stretch"):
+                    calculated = [_sample_row(row, scenario) for row in selected_rows]
+                    st.session_state["daily_results"] = calculated
+                    st.session_state["daily_result_selection"] = selected_ids
+                    if auto_save:
+                        _remember(calculated)
+            if st.session_state.get("daily_result_selection") == selected_ids:
+                results = st.session_state.get("daily_results", [])
+            with result_slot:
+                st.subheader("계산 결과")
+                if not results:
+                    st.markdown('<div class="recommendation-panel recommendation-panel--empty">'
+                                '<strong>아직 추천 결과가 없습니다</strong>'
+                                '<p class="recommendation-panel__note">공고 선택을 확인한 뒤 계산해 주세요.</p>'
+                                '</div>', unsafe_allow_html=True)
+                else:
+                    lookup = {row["notice_id"]: row for row in results}
+                    selected = results[0]
+                    if len(results) > 1:
+                        selected_id = st.selectbox("추천 결과 공고", list(lookup), key="daily_result_notice",
+                                                   format_func=lambda value: f'{lookup[value]["code"]} · {lookup[value]["title"]}')
+                        selected = lookup[selected_id]
+                    selected_notice = next(row for row in rows if row["id"] == selected["notice_id"])
+                    sample = recommendation(selected["scenario"])
+                    saved = st.session_state.get("demo_recommendations", {})
+                    save_status = "저장 완료" if saved.get(selected["notice_id"]) == selected else "저장 가능"
+                    st.markdown(f'<div class="recommendation-panel"><p class="recommendation-panel__note">'
+                                f'{escape(selected["code"])} · {escape(selected["scenario"])}</p>'
+                                f'<h3>{escape(selected["title"])}</h3>'
+                                '<div class="recommendation-amount recommendation-panel__amount"><span>추천금액 · 샘플</span>'
+                                f'<strong>{selected["amount"]:,}원</strong></div>'
+                                f'<p class="recommendation-panel__note">기초금액 · {selected_notice["base_amount"]:,}원'
+                                f'<br>개찰일 · {escape(selected_notice["deadline"])}</p>'
+                                f'<p class="recommendation-panel__note">저장 상태 · {save_status}</p></div>', unsafe_allow_html=True)
+                    st.caption(f'실투찰율 {sample["bid_rate"]:.2f}% · 신뢰도 {sample["confidence"]:.1f}% · 고정 샘플')
+                    st.caption("금액·실투찰율·신뢰도는 독립적인 가상 표시값입니다.")
+                    if st.button("결과 저장", key="daily_save_all", width="stretch"):
+                        _remember(results)
+                        done("샘플 결과를 저장했습니다.")
+                st.caption("고정 샘플입니다. 신뢰도는 낙찰 확률이 아닙니다.")
+    if results:
+        st.subheader("계산 결과 목록")
+        saved = st.session_state.get("demo_recommendations", {})
+        saved_count = sum(saved.get(row["notice_id"]) == row for row in results)
+        st.caption(f"샘플 결과 {len(results)}건 · 저장 완료 {saved_count}건")
+        view = [{"공고번호": row["code"], "공고명": row["title"], "샘플": row["scenario"], "추천 금액 (원)": row["amount"],
+                 "실투찰율 (%)": recommendation(row["scenario"])["bid_rate"],
+                 "신뢰도 (%)": recommendation(row["scenario"])["confidence"],
+                 "저장 상태": "저장 완료" if saved.get(row["notice_id"]) == row else "저장 가능"} for row in results]
+        _recommendation_table(view)
+        st.download_button("추천 결과 다운로드", _csv(view), "demo-daily.csv", "text/csv")
 
 
 def management_page(store):

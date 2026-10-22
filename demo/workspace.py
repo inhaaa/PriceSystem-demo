@@ -1,22 +1,30 @@
-"""원본의 공개 가능한 메뉴·업무 탭 구조. 계정별 운영 권한 규칙은 포함하지 않는다."""
+"""공고·추천·투찰 업무를 연결하는 공개 데모 작업 공간."""
+from datetime import date
+from html import escape
+
 import streamlit as st
 
-from demo.ui import brand, header, home_action_card_html, workspace_tab_scroll_script
+from demo.ui import brand, header, workspace_tab_scroll_script
 
 
 PAGES = [
     dict(key="category", label="카테고리 관리", description="분류 기준을 만들고 연결된 공고를 관리합니다.", group="기준 정보", icon=":material/category:"),
-    dict(key="data_upload", label="데이터 등록", description="입찰·낙찰 데이터를 등록하고 처리 결과를 확인합니다.", group="데이터 업무", icon=":material/upload_file:"),
-    dict(key="integrated_bids", label="통합 공고 조회", description="공고를 검색하고 상세 정보를 확인합니다.", group="데이터 업무", icon=":material/list_alt:"),
+    dict(key="data_upload", label="데이터 등록", description="관심공고를 등록하고 개찰일별 조회로 이어가세요.", group="데이터 업무", icon=":material/upload_file:"),
+    dict(key="integrated_bids", label="통합 공고 조회", description="등록한 공고를 공고명과 번호로 검색합니다.", group="데이터 업무", icon=":material/list_alt:"),
     dict(key="bid_award_search", label="입찰/낙찰 데이터 조회", description="입찰과 낙찰 데이터를 조건별로 검색하고 상세 정보를 조회합니다.", group="데이터 업무", icon=":material/search:"),
-    dict(key="daily_notices", label="개찰일별 공고관리", description="개찰일별 공고를 확인하고 관심 공고를 관리합니다.", group="추천 업무", icon=":material/edit_calendar:"),
-    dict(key="daily_recommend", label="개찰일별 추천계산", description="개찰일별로 관심공고를 모아 샘플 추천 결과를 확인합니다.", group="추천 업무", icon=":material/calendar_month:"),
+    dict(key="daily_notices", label="개찰일별 공고관리", description="개찰일로 조회하고 계산할 공고를 선택하세요.", group="추천 업무", icon=":material/edit_calendar:"),
+    dict(key="daily_recommend", label="개찰일별 추천계산", description="공고를 선택하고 계산 결과를 확인·저장하세요.", group="추천 업무", icon=":material/calendar_month:"),
     dict(key="my_bid_manage", label="나의 투찰관리", description="추천금액과 투찰 결과를 가상 공고별로 기록하고 관리합니다.", group="투찰 업무", icon=":material/work:"),
     dict(key="my_bid_status", label="내 투찰현황", description="나의 투찰 결과와 낙찰상태를 샘플로 확인합니다.", group="투찰 업무", icon=":material/monitoring:"),
     dict(key="g2b_api", label="나라장터 API 연동", description="공고와 개찰 데이터 조회 흐름을 외부 호출 없는 샘플로 체험합니다.", group="시스템 연동", icon=":material/api:"),
     dict(key="result_manage", label="결과 관리", description="가상 개찰결과를 등록하고 표시용 추천 결과와 함께 관리합니다.", group="결과 업무", icon=":material/task_alt:"),
 ]
 PAGE_BY_KEY = {page["key"]: page for page in PAGES}
+SIDEBAR_GROUPS = (
+    ("입찰 업무", ("integrated_bids", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "result_manage")),
+    ("자료 관리", ("data_upload", "bid_award_search", "category")),
+    ("시스템", ("g2b_api",)),
+)
 
 
 def open_tab(key):
@@ -47,21 +55,36 @@ def home():
     st.session_state["open_tabs"] = []
 
 
+def open_daily_notices(opening):
+    opening = date.fromisoformat(str(opening))
+    for key in ("daily_notices_select_all", "daily_notices_pending", "daily_notices_reason",
+                "daily_notices_other_reason", "daily_notices_ack"):
+        st.session_state.pop(key, None)
+    st.session_state["daily_notices_date"] = opening
+    st.session_state["daily_notices_query"] = opening.isoformat()
+    st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
+    open_tab("daily_notices")
+
+
+def open_daily_calculation(opening):
+    st.session_state["daily_requested_date"] = date.fromisoformat(str(opening))
+    open_tab("daily_recommend")
+
+
 def sidebar(restart):
     active = st.session_state.get("active_tab", "")
     with st.sidebar:
         brand()
-        st.button("Home", key="sidebar_home", type="primary" if not active else "secondary",
+        st.button("업무 홈", key="sidebar_home", type="primary" if not active else "secondary",
                   icon=":material/home:", width="stretch", on_click=home)
         st.markdown('<div class="sidebar-home-divider"></div>', unsafe_allow_html=True)
-        group = ""
-        for page in PAGES:
-            if page["group"] != group:
-                group = page["group"]
-                st.markdown(f'<div class="sidebar-nav-title">{group}</div>', unsafe_allow_html=True)
-            st.button(page["label"], key=f"menu_open_{page['key']}",
-                      type="primary" if active == page["key"] else "secondary",
-                      icon=page["icon"], width="stretch", on_click=open_tab, args=(page["key"],))
+        for group, keys in SIDEBAR_GROUPS:
+            st.markdown(f'<div class="sidebar-nav-title">{group}</div>', unsafe_allow_html=True)
+            for key in keys:
+                page = PAGE_BY_KEY[key]
+                st.button(page["label"], key=f"menu_open_{key}",
+                          type="primary" if active == key else "secondary",
+                          icon=page["icon"], width="stretch", on_click=open_tab, args=(key,))
         with st.container(key="sidebar_account_area"):
             st.markdown('<div class="sidebar-account-label">현재 계정</div>'
                         '<div class="sidebar-account-name">admin <small>· DEMO</small></div>', unsafe_allow_html=True)
@@ -71,7 +94,10 @@ def sidebar(restart):
 
 def masthead(active):
     with st.container(key="workspace_masthead"):
-        st.markdown('<div class="workspace-tabbar-spacer"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="workspace-utility"><span class="workspace-utility__label">'
+                    '업무 홈 <span aria-hidden="true">/</span> '
+                    f'{escape(PAGE_BY_KEY[active]["label"])}</span>'
+                    '<span class="workspace-utility__status">DEMO · 가상 데이터</span></div>', unsafe_allow_html=True)
         with st.container(key="internal_tab_bar", horizontal=True, vertical_alignment="center", gap="small"):
             for index, key in enumerate(st.session_state.get("open_tabs", [])):
                 with st.container(key=f"workspace_tab_{index}_{key}", horizontal=True,
@@ -83,24 +109,118 @@ def masthead(active):
                               help=f"{PAGE_BY_KEY[key]['label']} 닫기", on_click=close_tab, args=(key,))
         st.html(workspace_tab_scroll_script(active), unsafe_allow_javascript=True)
         page = PAGE_BY_KEY[active]
-        header(page["label"], page["description"], page["group"])
+        header("관심공고 등록" if active == "data_upload" else page["label"], page["description"])
 
 
-def render_home():
+def home_summary(store):
+    """집계는 현재 세션의 기록만 사용하며 대기 공고는 중복 없이 센다."""
+    notices = store.notices()
+    submissions = store.submissions()
+    completed = {row["notice_id"] for row in store.results() if row["outcome"] != "검토중"}
+    awaiting = {row["notice_id"] for row in submissions
+                if row["status"] == "제출완료" and row["notice_id"] not in completed}
+    return dict(notices=len(notices), submissions=len(submissions), awaiting_results=len(awaiting))
+
+
+def schedule_groups(rows, saved):
+    groups = {}
+    for row in rows:
+        group = groups.setdefault(row["deadline"], dict(date=row["deadline"], notices=[], calculated=0))
+        group["notices"].append(row)
+        group["calculated"] += row["id"] in saved
+    return [groups[opening] for opening in sorted(groups)]
+
+
+def _schedule_day(group, saved):
+    opening = date.fromisoformat(group["date"])
+    weekday = ("월", "화", "수", "목", "금", "토", "일")[opening.weekday()]
+    with st.container(key=f"home_schedule_day_{opening.isoformat()}"):
+        label, actions = st.columns([3, 2], vertical_alignment="center")
+        label.markdown('<div class="schedule-day-heading">'
+                       f'<time datetime="{opening.isoformat()}"><strong>{opening.day:02d}</strong>'
+                       f'<span>{opening.month}월 · {weekday}요일</span></time>'
+                       f'<span class="schedule-count">공고 {len(group["notices"])}건</span></div>', unsafe_allow_html=True)
+        with actions, st.container(key=f"home_schedule_actions_{group['date']}", horizontal=True,
+                                   horizontal_alignment="right", gap="small"):
+            st.button("공고 조회", key=f"home_day_notices_{group['date']}", type="tertiary",
+                      on_click=open_daily_notices, args=(opening,))
+            st.button("계산", key=f"home_day_calculate_{group['date']}", type="tertiary",
+                      icon=":material/arrow_forward:", icon_position="right",
+                      on_click=open_daily_calculation, args=(opening,))
+        for row in group["notices"]:
+            calculated = row["id"] in saved
+            st.markdown('<article class="schedule-notice"><div class="schedule-notice__body">'
+                        f'<h3>{escape(row["title"])}</h3><span>{escape(row["code"])}</span></div>'
+                        f'<div class="schedule-notice__amount">{row["base_amount"]:,}<small>원</small></div>'
+                        f'<span class="schedule-status{" schedule-status--saved" if calculated else ""}">'
+                        f'{"계산 저장됨" if calculated else "계산 전"}</span></article>', unsafe_allow_html=True)
+
+
+def render_home(store):
+    rows = store.notices()
+    saved = st.session_state.get("demo_recommendations", {})
+    groups = schedule_groups(rows, saved)
     with st.container(key="workspace_home"):
-        st.markdown('<section class="home-launcher"><h2>입찰가격 분석</h2>'
-                    '<p>데이터의 여러 면을 읽고, 판단을 선명하게.</p></section>', unsafe_allow_html=True)
-        page = PAGE_BY_KEY["daily_recommend"]
-        with st.container(key="home_featured_daily_recommend"):
-            st.markdown(home_action_card_html(page["label"], page["description"], page["icon"], featured=True), unsafe_allow_html=True)
-            st.button("추천계산 시작하기", key="home_open_daily_recommend", type="primary",
-                      icon=":material/arrow_forward:", icon_position="right", width="stretch",
-                      on_click=open_tab, args=("daily_recommend",))
-        page = PAGE_BY_KEY["data_upload"]
-        with st.container(key="home_secondary_grid_1"):
-            with st.container(key="home_secondary_data_upload"):
-                st.markdown(home_action_card_html(page["label"], page["description"], page["icon"]), unsafe_allow_html=True)
-                st.button("데이터 등록하기", key="home_open_data_upload", type="tertiary",
-                          icon=":material/arrow_forward:", icon_position="right", width="stretch",
-                          on_click=open_tab, args=("data_upload",))
-        st.caption("DEMO · 가상 데이터로 체험합니다. 변경 내용은 현재 세션에만 유지됩니다.")
+        st.markdown('<div class="workspace-utility"><span class="workspace-utility__label">업무 홈</span>'
+                    '<span class="workspace-utility__status">DEMO · 가상 데이터</span></div>', unsafe_allow_html=True)
+        with st.container(key="home_heading"):
+            title, action = st.columns([3, 1], vertical_alignment="center")
+            title.markdown('<header class="workbench-heading"><h1>업무 홈</h1>'
+                           '<p>개찰 일정을 확인하고, 필요한 공고의 계산을 이어가세요.</p></header>', unsafe_allow_html=True)
+            action.button("관심공고 등록", key="home_open_data_upload", type="primary", icon=":material/add:",
+                          width="stretch", on_click=open_tab, args=("data_upload",))
+        if not rows:
+            st.info("등록된 공고가 없습니다. 관심공고를 등록해 주세요.")
+            return
+        today = date.today()
+        upcoming = [group for group in groups if group["date"] >= today.isoformat()]
+        default_date = date.fromisoformat((upcoming or groups)[0]["date"])
+        with st.container(key="home_workbench"):
+            schedule, tasks = st.columns([2.4, 1], gap="medium")
+            with schedule, st.container(key="home_schedule"):
+                heading, picker = st.columns([2, 1], vertical_alignment="center")
+                heading.markdown('<h2 class="workbench-section-title">개찰 일정</h2>'
+                                 '<p class="workbench-section-note">등록 공고 기준</p>', unsafe_allow_html=True)
+                months = sorted({group["date"][:7] for group in groups}, reverse=True)
+                current_month = today.strftime("%Y-%m")
+                month = picker.selectbox("개찰 월", months, index=months.index(current_month) if current_month in months else 0,
+                                         format_func=lambda value: f"{value[:4]}년 {int(value[5:])}월",
+                                         key="home_schedule_month", label_visibility="collapsed")
+                month_groups = [group for group in groups if group["date"].startswith(month)]
+                pending = [group for group in month_groups if group["date"] >= today.isoformat()]
+                previous = [group for group in month_groups if group["date"] < today.isoformat()]
+                for group in pending:
+                    _schedule_day(group, saved)
+                if previous:
+                    with st.expander(f"이전 개찰 일정 · {len(previous)}일", expanded=not pending):
+                        for group in previous:
+                            _schedule_day(group, saved)
+                st.caption(f"{int(month[5:])}월 등록 공고 {sum(len(group['notices']) for group in month_groups):,}건")
+            with tasks, st.container(key="home_action_panel"):
+                st.markdown('<h2 class="workbench-section-title">계산 작업</h2>'
+                            '<p class="workbench-section-note">개찰일을 고르고 계산을 시작하세요.</p>', unsafe_allow_html=True)
+                opening = st.date_input("계산할 개찰일", default_date, key="home_calculation_date")
+                selected = next((group for group in groups if group["date"] == opening.isoformat()), None)
+                count = len(selected["notices"]) if selected else 0
+                calculated = selected["calculated"] if selected else 0
+                st.markdown('<dl class="workbench-facts">'
+                            f'<div><dt>등록 공고</dt><dd>{count}건</dd></div>'
+                            f'<div><dt>계산 저장</dt><dd>{calculated}건</dd></div></dl>', unsafe_allow_html=True)
+                if not count:
+                    st.caption("선택한 날짜에 등록된 공고가 없습니다.")
+                st.button("공고 조회하고 계산", key="home_open_daily_recommend", type="primary", width="stretch",
+                          disabled=not count, on_click=open_daily_calculation, args=(opening,))
+                st.button("날짜별 공고 조회", key="home_open_daily_notices", width="stretch",
+                          on_click=open_daily_notices, args=(opening,))
+                st.markdown('<div class="workbench-panel-divider"></div><h3 class="workbench-panel-subtitle">저장한 계산</h3>',
+                            unsafe_allow_html=True)
+                recent = [row for row in rows if row["id"] in saved][-3:]
+                if not recent:
+                    st.caption("저장한 계산 결과가 없습니다.")
+                for row in reversed(recent):
+                    result = saved[row["id"]]
+                    st.markdown('<div class="saved-calculation">'
+                                f'<span>{escape(row["code"])}</span><strong>{escape(row["title"])}</strong>'
+                                f'<p>{result["amount"]:,}원 <small>샘플</small></p></div>', unsafe_allow_html=True)
+                st.caption("계산 결과는 고정 샘플입니다.")
+        st.caption("DEMO · 가상 데이터이며 변경 내용은 현재 세션에만 유지됩니다.")

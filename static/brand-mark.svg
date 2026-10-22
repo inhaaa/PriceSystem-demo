@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>PriceSystem 가격 기준점</title>
+  <rect width="64" height="64" rx="2" fill="#173b31"/>
+  <path d="M10 19h44M10 32h44M10 45h44" stroke="#f5f4ed" stroke-opacity=".35"/>
+  <path d="M12 15h22v8H12zM22 28h30v8H22zM12 41h30v8H12z" fill="#f5f4ed"/>
+  <path d="M43 9v46" stroke="#d4ed76" stroke-width="2"/>
+  <circle cx="43" cy="32" r="4" fill="#d4ed76"/>
+</svg>
