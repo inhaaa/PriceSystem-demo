@@ -1,5 +1,41 @@
 """외부 호출 및 실제 분석이 없는 고정 데모 서비스."""
 
+REVIEW_STATUSES = ("검토대기", "준비중", "검토완료", "보류")
+REVIEW_CHECKS = (
+    ("eligibility", "참가 자격·조건 확인"),
+    ("documents", "필수 서류 준비"),
+    ("amount", "투찰금액 확인"),
+    ("schedule", "제출 일정 확인"),
+)
+
+
+def get_review(reviews, notice_id):
+    """세션의 검토 내용이나 기본값을 원본과 분리해 반환한다."""
+    if type(notice_id) is not int or notice_id <= 0:
+        raise ValueError("올바른 공고를 선택해 주세요.")
+    default = {"status": "검토대기", "checks": {key: False for key, _ in REVIEW_CHECKS}, "note": ""}
+    review = reviews.get(notice_id, default)
+    return {**review, "checks": dict(review["checks"])}
+
+
+def save_review(reviews, notice_id, *, status, checks, note=""):
+    """검토 내용을 모두 검증한 뒤 세션 사전에 한 번에 저장한다."""
+    if type(notice_id) is not int or notice_id <= 0:
+        raise ValueError("올바른 공고를 선택해 주세요.")
+    if not isinstance(status, str) or status not in REVIEW_STATUSES:
+        raise ValueError("검토 상태를 선택해 주세요.")
+    if not isinstance(checks, dict) or set(checks) != {key for key, _ in REVIEW_CHECKS}:
+        raise ValueError("검토 항목 네 개를 모두 입력해 주세요.")
+    if any(type(value) is not bool for value in checks.values()):
+        raise ValueError("검토 항목은 확인 여부로 입력해 주세요.")
+    if not isinstance(note, str) or len(note.strip()) > 1000:
+        raise ValueError("검토 메모는 1000자 이내의 문자열로 입력해 주세요.")
+    if status == "검토완료" and not all(checks.values()):
+        raise ValueError("검토완료로 저장하려면 네 항목을 모두 확인해 주세요.")
+    review = {"status": status, "checks": dict(checks), "note": note.strip()}
+    reviews[notice_id] = review
+    return {**review, "checks": dict(review["checks"])}
+
 
 def authenticate(username, password):
     """공개 체험용 계정만 비교한다. 실제 사용자 인증 기능이 아니다."""

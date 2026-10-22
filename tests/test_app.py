@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
-PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage"]
+PAGES = ["category", "data_upload", "integrated_bids", "bid_award_search", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "g2b_api", "result_manage", "bid_review"]
 
 
 class AppJourneys(unittest.TestCase):
@@ -60,7 +60,7 @@ class AppJourneys(unittest.TestCase):
     def test_original_menu_opens_separate_workspace_tabs(self):
         app = self.login(self.new_app())
         self.assertEqual(len(app.radio), 0)
-        self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 10)
+        self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 11)
         app.button(key="menu_open_data_upload").click().run()
         self.assertEqual([tab.label for tab in app.tabs], ["관심공고", "입찰서류함 엑셀", "상세 PDF", "과거데이터", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
         app.button(key="menu_open_daily_recommend").click().run()
@@ -82,6 +82,28 @@ class AppJourneys(unittest.TestCase):
         self.assertEqual(len(app.session_state["store"].notices()), initial)
         self.assertFalse(app.session_state["store"].notices(query="DEMO-CURRENT_EXCEL"))
 
+    def test_review_survives_tab_close_and_clears_on_reset_and_logout(self):
+        app = self.login(self.new_app())
+        self.assertIn('menu_open_bid_review', {button.key for button in app.button})
+        app.button(key='menu_open_bid_review').click().run()
+        app.checkbox(key='review_1_documents').set_value(True)
+        app.selectbox(key='review_1_status').set_value('보류')
+        app.button(key='review_save_1').click().run()
+        app.button(key='tab_close_bid_review').click().run()
+        app.button(key='menu_open_bid_review').click().run()
+        self.assertFalse(app.exception)
+        self.assertTrue(app.checkbox(key='review_1_documents').value)
+        self.assertEqual(app.selectbox(key='review_1_status').value, '보류')
+        app.button(key='reset_samples').click().run()
+        app.button(key='menu_open_bid_review').click().run()
+        self.assertFalse(app.checkbox(key='review_1_documents').value)
+        self.assertEqual(app.selectbox(key='review_1_status').value, '검토대기')
+        app.selectbox(key='review_1_status').set_value('보류')
+        app.button(key='review_save_1').click().run()
+        app.button(key='logout').click().run()
+        self.login(app)
+        app.button(key='menu_open_bid_review').click().run()
+        self.assertEqual(app.selectbox(key='review_1_status').value, '검토대기')
 
     def test_visitors_and_logout_are_isolated(self):
         first = self.login(self.new_app())

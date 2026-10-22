@@ -18,10 +18,12 @@ PAGES = [
     dict(key="my_bid_status", label="내 투찰현황", description="나의 투찰 결과와 낙찰상태를 샘플로 확인합니다.", group="투찰 업무", icon=":material/monitoring:"),
     dict(key="g2b_api", label="나라장터 API 연동", description="공고와 개찰 데이터 조회 흐름을 외부 호출 없는 샘플로 체험합니다.", group="시스템 연동", icon=":material/api:"),
     dict(key="result_manage", label="결과 관리", description="가상 개찰결과를 등록하고 표시용 추천 결과와 함께 관리합니다.", group="결과 업무", icon=":material/task_alt:"),
+    dict(key="bid_review", label="투찰 검토함", description="공고별 준비 항목을 확인하고 투찰 전 검토 상태를 관리하세요.", group="업무 관리", icon=":material/checklist:"),
 ]
 PAGE_BY_KEY = {page["key"]: page for page in PAGES}
 SIDEBAR_GROUPS = (
     ("입찰 업무", ("integrated_bids", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "result_manage")),
+    ("업무 관리", ("bid_review",)),
     ("자료 관리", ("data_upload", "bid_award_search", "category")),
     ("시스템", ("g2b_api",)),
 )

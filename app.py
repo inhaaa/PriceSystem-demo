@@ -20,6 +20,7 @@ HANDLERS = {
     "my_bid_status": bid_pages.status_page,
     "g2b_api": bid_pages.api_page,
     "result_manage": bid_pages.results_page,
+    "bid_review": bid_pages.review_page,
 }
 
 

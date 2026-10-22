@@ -6,7 +6,10 @@ import pandas as pd
 import streamlit as st
 
 from demo.data_pages import _upload_panel
-from demo.services import api_response, backtest_sample, recommendation
+from demo.services import (
+    REVIEW_CHECKS, REVIEW_STATUSES, api_response, backtest_sample,
+    get_review, recommendation, save_review,
+)
 from demo.store import RESULT_OUTCOMES, SUBMISSION_STATUSES
 from demo.ui import csv_bytes as _csv, done, money_columns, table
 
@@ -463,3 +466,74 @@ def results_page(store):
         primary = st.session_state.get("demo_primary", {}).get(row["id"])
         if primary:
             st.caption("현재 대표 샘플: " + primary)
+
+
+def review_page(store):
+    """투찰 제출 상태와 분리된 공고별 준비 항목을 현재 세션에 저장한다."""
+    rows = store.notices()
+    reviews = st.session_state.setdefault("demo_reviews", {})
+    current = {row["id"]: get_review(reviews, row["id"]) for row in rows}
+    with st.container(key="review_summary"):
+        for column, status in zip(st.columns(4), REVIEW_STATUSES):
+            column.metric(status, f"{sum(item['status'] == status for item in current.values())}건")
+    st.caption("전체 등록 공고 기준 · 검토 상태는 실제 투찰의 제출 상태와 별도로 관리합니다.")
+    if not rows:
+        st.info("검토할 공고가 없습니다. 관심공고를 먼저 등록해 주세요.")
+        return
+    with st.container(key="review_filters"):
+        search, category_column, status_column = st.columns([2, 1, 1])
+        keyword = search.text_input("공고명 또는 번호", key="review_keyword", placeholder="공고명이나 공고번호로 검색")
+        category = category_column.selectbox("카테고리", ["전체", *store.categories()], key="review_category")
+        status = status_column.selectbox("검토 상태", ["전체", *REVIEW_STATUSES], key="review_filter_status")
+    filtered = [row for row in rows if _matches(row, keyword)
+                and (category == "전체" or row["category"] == category)
+                and (status == "전체" or current[row["id"]]["status"] == status)]
+    if not filtered:
+        st.info("검색 조건에 맞는 공고가 없습니다. 검색어나 검토 상태를 바꿔 주세요.")
+        return
+    with st.container(key="review_workbench"):
+        listing, detail = st.columns([1.8, 1.2], gap="medium")
+        with listing, st.container(key="review_list_panel"):
+            st.markdown('<h2 class="workbench-section-title">검토 대상 공고</h2>'
+                        f'<p class="workbench-section-note">조회 {len(filtered)}건 · 저장된 검토 내용 기준</p>',
+                        unsafe_allow_html=True)
+            display = [{"공고명": row["title"], "공고번호": row["code"],
+                        "분류": row["category"], "기초금액": row["base_amount"],
+                        "확인 항목": f"{sum(current[row['id']]['checks'].values())} / {len(REVIEW_CHECKS)}",
+                        "검토 상태": current[row["id"]]["status"]} for row in filtered]
+            table(display, ["공고명", "공고번호", "분류", "기초금액", "확인 항목", "검토 상태"])
+            st.caption("오른쪽에서 검토할 공고를 선택하고 확인 항목을 저장하세요.")
+        with detail, st.container(key="review_detail_panel"):
+            ids = {row["id"] for row in filtered}
+            if st.session_state.get("review_notice") not in ids:
+                st.session_state.pop("review_notice", None)
+            row = _notice_choice("검토할 공고", filtered, "review_notice")
+            target = row["id"]
+            review = current[target]
+            badge = {"검토완료": "complete", "보류": "hold"}.get(review["status"], "pending")
+            st.markdown('<div class="review-notice-heading">'
+                        f'<span class="review-notice-code">{escape(row["code"])}</span>'
+                        f'<span class="review-status review-status--{badge}">{review["status"]}</span>'
+                        f'<h3>{escape(row["title"])}</h3>'
+                        f'<p>{escape(row["agency"])} · {escape(row["category"])}</p></div>',
+                        unsafe_allow_html=True)
+            checked = sum(review["checks"].values())
+            st.progress(checked / len(REVIEW_CHECKS), text=f"저장된 확인 항목 {checked} / {len(REVIEW_CHECKS)}")
+            with st.form(f"review_form_{target}"):
+                st.markdown('<h3 class="workbench-panel-subtitle">투찰 전 체크리스트</h3>', unsafe_allow_html=True)
+                checks = {key: st.checkbox(label, value=review["checks"][key], key=f"review_{target}_{key}")
+                          for key, label in REVIEW_CHECKS}
+                selected_status = st.selectbox("검토 상태 변경", REVIEW_STATUSES,
+                                                index=REVIEW_STATUSES.index(review["status"]), key=f"review_{target}_status")
+                st.caption("네 항목을 모두 확인하면 검토완료로 저장할 수 있습니다.")
+                note = st.text_area("검토 메모", review["note"], max_chars=1000, height=100,
+                                    placeholder="추가 확인할 내용이나 보류 사유를 남겨 주세요.", key=f"review_{target}_note")
+                submitted = st.form_submit_button("검토 내용 저장", type="primary", width="stretch", key=f"review_save_{target}")
+            if submitted:
+                try:
+                    save_review(reviews, target, status=selected_status, checks=checks, note=note)
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    done(f"{row['code']} 검토 내용을 저장했습니다.")
+    st.caption("DEMO · 체크리스트와 검토 메모는 현재 세션에만 유지됩니다.")

@@ -35,7 +35,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual([p["label"] for p in workspace.PAGES], [
             "카테고리 관리", "데이터 등록", "통합 공고 조회", "입찰/낙찰 데이터 조회",
             "개찰일별 공고관리", "개찰일별 추천계산", "나의 투찰관리", "내 투찰현황",
-            "나라장터 API 연동", "결과 관리",
+            "나라장터 API 연동", "결과 관리", "투찰 검토함",
         ])
         with patch.object(workspace.st, "session_state", {}):
             workspace.open_tab("daily_notices")
@@ -61,6 +61,11 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 workspace.open_tab("production")
 
+    def test_review_menu_has_its_own_group_and_opens_a_workspace_tab(self):
+        self.assertIn(('업무 관리', ('bid_review',)), workspace.SIDEBAR_GROUPS)
+        with patch.object(workspace.st, 'session_state', {}):
+            workspace.open_tab('bid_review')
+            self.assertEqual(workspace.st.session_state['active_tab'], 'bid_review')
 
     def test_closing_upload_discards_preview_but_keeps_registered_history(self):
         state = {"current_excel_preview": True, "current_excel_selection": ["DEMO-1"],

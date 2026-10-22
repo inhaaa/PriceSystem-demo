@@ -195,7 +195,7 @@ def _archive_notice(store, row):
               "pdfs": st.session_state.get("pdf_links", {}).pop(target, [])}
     bundle["session_metadata"] = {
         key: st.session_state[key].pop(target)
-        for key in ("demo_recommendations", "demo_primary", "demo_result_context")
+        for key in ("demo_recommendations", "demo_primary", "demo_result_context", "demo_reviews")
         if target in st.session_state.get(key, {})
     }
     st.session_state.setdefault("notice_archive", []).append(bundle)
@@ -209,7 +209,7 @@ def _archive_notice(store, row):
     st.session_state.pop("daily_confirmed", None)
     st.session_state["daily_query_revision"] = st.session_state.get("daily_query_revision", 0) + 1
     st.session_state["management_revision"] = st.session_state.get("management_revision", 0) + 1
-    prefixes = (f"recommendation_{target}_", f"result_{target}_", f"edit_{target}_", "daily_editor_", "management_editor_")
+    prefixes = (f"recommendation_{target}_", f"result_{target}_", f"edit_{target}_", f"review_{target}_", "daily_editor_", "management_editor_")
     prefixes += tuple(f"submission_{item['id']}_" for item in bundle["submissions"])
     for key in list(st.session_state):
         if key.startswith(prefixes) or key in (f"result_confirm_{target}", f"delete_confirm_{target}", f"archive_code_{target}", f"notice_move_{target}"):
