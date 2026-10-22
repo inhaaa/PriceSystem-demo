@@ -35,6 +35,19 @@ class IsolationTests(unittest.TestCase):
             self.assertNotIn(path.suffix.lower(), {".db", ".sqlite", ".sqlite3", ".log", ".pem", ".key"}, relative)
             self.assertNotIn(path.name.lower(), {".env", "secrets.toml", "users.json"}, relative)
 
+    def test_all_reviewed_runtime_modules_and_assets_are_published_and_buildable(self):
+        from tests.test_deployment import in_build_context
+
+        published = set((ROOT / 'PUBLIC_FILES.txt').read_text(encoding='utf-8').splitlines())
+        runtime = {path.relative_to(ROOT).as_posix()
+                   for directory in ('demo', 'assets', 'static') for path in (ROOT / directory).rglob('*')
+                   if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc'}
+        self.assertFalse(runtime - published, f'공개 런타임 검토 목록 누락: {sorted(runtime - published)}')
+        rules = (ROOT / '.dockerignore').read_text(encoding='utf-8').splitlines()
+        for relative in sorted(runtime):
+            with self.subTest(relative=relative):
+                self.assertTrue(in_build_context(relative, rules), f'배포 이미지에서 제외된 런타임: {relative}')
+
     def test_application_has_only_declared_imports(self):
         allowed = {"base64", "collections", "csv", "datetime", "decimal", "hashlib", "html", "io", "json", "re", "pathlib", "sqlite3", "pandas", "streamlit", "demo"}
         for path in [ROOT / "app.py", *sorted((ROOT / "demo").glob("*.py"))]:

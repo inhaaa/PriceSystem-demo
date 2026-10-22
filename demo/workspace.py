@@ -4,6 +4,7 @@ from html import escape
 
 import streamlit as st
 
+from demo.schedule import render_schedule
 from demo.ui import brand, header, workspace_tab_scroll_script
 
 
@@ -135,31 +136,6 @@ def schedule_groups(rows, saved):
     return [groups[opening] for opening in sorted(groups)]
 
 
-def _schedule_day(group, saved):
-    opening = date.fromisoformat(group["date"])
-    weekday = ("월", "화", "수", "목", "금", "토", "일")[opening.weekday()]
-    with st.container(key=f"home_schedule_day_{opening.isoformat()}"):
-        label, actions = st.columns([3, 2], vertical_alignment="center")
-        label.markdown('<div class="schedule-day-heading">'
-                       f'<time datetime="{opening.isoformat()}"><strong>{opening.day:02d}</strong>'
-                       f'<span>{opening.month}월 · {weekday}요일</span></time>'
-                       f'<span class="schedule-count">공고 {len(group["notices"])}건</span></div>', unsafe_allow_html=True)
-        with actions, st.container(key=f"home_schedule_actions_{group['date']}", horizontal=True,
-                                   horizontal_alignment="right", gap="small"):
-            st.button("공고 조회", key=f"home_day_notices_{group['date']}", type="tertiary",
-                      on_click=open_daily_notices, args=(opening,))
-            st.button("계산", key=f"home_day_calculate_{group['date']}", type="tertiary",
-                      icon=":material/arrow_forward:", icon_position="right",
-                      on_click=open_daily_calculation, args=(opening,))
-        for row in group["notices"]:
-            calculated = row["id"] in saved
-            st.markdown('<article class="schedule-notice"><div class="schedule-notice__body">'
-                        f'<h3>{escape(row["title"])}</h3><span>{escape(row["code"])}</span></div>'
-                        f'<div class="schedule-notice__amount">{row["base_amount"]:,}<small>원</small></div>'
-                        f'<span class="schedule-status{" schedule-status--saved" if calculated else ""}">'
-                        f'{"계산 저장됨" if calculated else "계산 전"}</span></article>', unsafe_allow_html=True)
-
-
 def render_home(store):
     rows = store.notices()
     saved = st.session_state.get("demo_recommendations", {})
@@ -182,24 +158,8 @@ def render_home(store):
         with st.container(key="home_workbench"):
             schedule, tasks = st.columns([2.4, 1], gap="medium")
             with schedule, st.container(key="home_schedule"):
-                heading, picker = st.columns([2, 1], vertical_alignment="center")
-                heading.markdown('<h2 class="workbench-section-title">개찰 일정</h2>'
-                                 '<p class="workbench-section-note">등록 공고 기준</p>', unsafe_allow_html=True)
-                months = sorted({group["date"][:7] for group in groups}, reverse=True)
-                current_month = today.strftime("%Y-%m")
-                month = picker.selectbox("개찰 월", months, index=months.index(current_month) if current_month in months else 0,
-                                         format_func=lambda value: f"{value[:4]}년 {int(value[5:])}월",
-                                         key="home_schedule_month", label_visibility="collapsed")
-                month_groups = [group for group in groups if group["date"].startswith(month)]
-                pending = [group for group in month_groups if group["date"] >= today.isoformat()]
-                previous = [group for group in month_groups if group["date"] < today.isoformat()]
-                for group in pending:
-                    _schedule_day(group, saved)
-                if previous:
-                    with st.expander(f"이전 개찰 일정 · {len(previous)}일", expanded=not pending):
-                        for group in previous:
-                            _schedule_day(group, saved)
-                st.caption(f"{int(month[5:])}월 등록 공고 {sum(len(group['notices']) for group in month_groups):,}건")
+                render_schedule(groups, saved, open_notices=open_daily_notices,
+                                open_calculation=open_daily_calculation)
             with tasks, st.container(key="home_action_panel"):
                 st.markdown('<h2 class="workbench-section-title">계산 작업</h2>'
                             '<p class="workbench-section-note">개찰일을 고르고 계산을 시작하세요.</p>', unsafe_allow_html=True)

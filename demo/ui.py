@@ -5,6 +5,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from demo.login_scene import render_login_scene
+from demo.preferences import render_preferences
 from demo.visual_components import (
     home_action_card_html,
     login_panel_html,
@@ -31,13 +33,14 @@ def apply_theme(login=False):
     css = (ASSETS / ("login.css" if login else "demo.css")).read_text(encoding="utf-8")
     if login:
         st.markdown(f"<style>{tokens}\n{css}</style>", unsafe_allow_html=True)
-        return
-    st.markdown(
-        f"<style>{tokens}\n{css}\n{WORKSPACE_THEME_CSS}</style>"
-        + workspace_theme_marker_html(st.context.theme.type),
-        unsafe_allow_html=True,
-    )
-    render_sheet_theme_bridge()
+    else:
+        st.markdown(
+            f"<style>{tokens}\n{css}\n{WORKSPACE_THEME_CSS}</style>"
+            + workspace_theme_marker_html(st.context.theme.type),
+            unsafe_allow_html=True,
+        )
+        render_sheet_theme_bridge()
+    render_preferences()
 
 
 def brand():
@@ -62,24 +65,26 @@ def card(number, title, description):
 
 def render_login_page() -> tuple[str, str, bool]:
     """제품 안내와 native 로그인 폼을 간결한 진입 화면으로 연결한다."""
-    apply_theme(login=True)
-    st.markdown(login_panel_html("PriceSystem", "입찰가격선정시스템",
-                                "공고와 투찰 내역을 한곳에서 관리합니다."), unsafe_allow_html=True)
-    with st.form("login_form"):
-        st.markdown('<div id="login-card-root"></div>', unsafe_allow_html=True)
+    with st.container(key="login_workbench"):
+        apply_theme(login=True)
+        render_login_scene()
+        st.markdown(login_panel_html("PriceSystem", "입찰가격선정시스템",
+                                    "공고와 투찰 내역을 한곳에서 관리합니다."), unsafe_allow_html=True)
+        with st.form("login_form"):
+            st.markdown('<div id="login-card-root"></div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="login-brand"><h2>로그인</h2>'
+                '<p class="login-brand__eyebrow">계정 정보를 입력해 주세요.</p></div>',
+                unsafe_allow_html=True,
+            )
+            username = st.text_input("아이디", key="login_username")
+            password = st.text_input("비밀번호", type="password", key="login_password")
+            submitted = st.form_submit_button("로그인", key="login_submit", type="primary", use_container_width=True)
         st.markdown(
-            '<div class="login-brand"><h2>로그인</h2>'
-            '<p class="login-brand__eyebrow">계정 정보를 입력해 주세요.</p></div>',
+            '<div class="login-access-footer"><span>데모 계정: admin / admin</span>'
+            '<span>가상 데이터로 입찰 업무를 둘러볼 수 있습니다.</span></div>',
             unsafe_allow_html=True,
         )
-        username = st.text_input("아이디", key="login_username")
-        password = st.text_input("비밀번호", type="password", key="login_password")
-        submitted = st.form_submit_button("로그인", key="login_submit", type="primary", use_container_width=True)
-    st.markdown(
-        '<div class="login-access-footer"><span>데모 계정: admin / admin</span>'
-        '<span>가상 데이터로 입찰 업무를 둘러볼 수 있습니다.</span></div>',
-        unsafe_allow_html=True,
-    )
     return username, password, submitted
 
 

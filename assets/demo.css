@@ -378,3 +378,17 @@ body:has(.workspace-theme-marker):not(:has(#login-card-root)) .st-key-my_bid_sta
     min-height: 44px;
   }
 }
+
+/* Opening schedule controls retain one row and keyboard focus on small screens. */
+.st-key-home_schedule div[class*="st-key-home_day_toggle_"] button { justify-content: flex-start; min-height: 38px; width: 100%; text-align: left; }
+.st-key-home_schedule div[class*="st-key-home_day_toggle_"] button p { font-size: .8125rem; font-weight: 650; white-space: normal; overflow-wrap: anywhere; }
+.st-key-schedule_bulk_actions { flex-direction: row; flex-wrap: nowrap; justify-content: flex-end; gap: 8px; }
+.st-key-schedule_bulk_actions > [data-testid="stLayoutWrapper"] { flex: 0 0 auto; width: auto; min-width: 0; }
+.st-key-schedule_bulk_actions button { min-height: 36px; padding: 7px 10px; white-space: nowrap; font-size: .75rem; }
+.st-key-schedule_scope_toggle button { justify-content: center; margin-top: 8px; }
+@media (max-width: 768px) {
+  .st-key-schedule_bulk_actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .st-key-schedule_bulk_actions > [data-testid="stLayoutWrapper"] { flex: 0 0 auto; width: auto; min-width: 0; }
+  .st-key-home_schedule div[class*="st-key-home_schedule_actions_"] { flex-direction: row; flex-wrap: nowrap; justify-content: flex-end; }
+  .st-key-home_schedule div[class*="st-key-home_day_toggle_"] button p { font-size: .8125rem; }
+}

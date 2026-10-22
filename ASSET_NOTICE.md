@@ -18,7 +18,9 @@ PriceSystem 데모는 포트폴리오 열람·평가와 데모 체험을 위해 
 
 Python, Streamlit, pandas 및 그 의존성은 각각의 권리자가 제공하는 라이선스와 고지를 따릅니다. 이 안내는 해당 소프트웨어가 이미 부여한 이용·수정·배포 권한을 변경하거나 제한하지 않습니다.
 
-이전 로그인 렌더러와 함께 보존한 로컬 Three.js 파일은 MIT 라이선스이며, 원래 저작권 고지와 [라이선스 전문](static/vendor/THREE-LICENSE.txt)을 함께 제공합니다. 현재 로그인과 업무 화면은 로컬 SVG 브랜드 그래픽을 사용하며 Three.js를 마운트하지 않습니다. 자체 디자인에 관한 제한은 이 제3자 라이브러리의 이용 권한을 제한하지 않습니다.
+로그인 가격 밴드 장식에 사용하는 로컬 Three.js 파일은 MIT 라이선스이며, 원래 저작권 고지와 [라이선스 전문](static/vendor/THREE-LICENSE.txt)을 함께 제공합니다. 자체 디자인에 관한 제한은 이 제3자 라이브러리의 이용 권한을 제한하지 않습니다.
+
+로컬 웹폰트 Pretendard Variable v1.3.9(© 2021 Kil Hyung-jin)와 SUIT Variable v2.0.5(© 2022 SUNN)는 SIL Open Font License 1.1로 제공합니다. 원본 WOFF2 파일을 수정하지 않았으며 [Pretendard 라이선스](static/fonts/Pretendard-OFL.txt)와 [SUIT 라이선스](static/fonts/SUIT-OFL.txt)를 함께 제공합니다. 공식 원본은 각각 [Pretendard](https://github.com/orioncactus/pretendard/tree/v1.3.9), [SUIT](https://github.com/sun-typeface/SUIT/tree/v2.0.5)에서 확인할 수 있습니다.
 
 ## 가상 데이터
 
