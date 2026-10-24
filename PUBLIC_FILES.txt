@@ -1,4 +1,5 @@
 .dockerignore
+.github/workflows/readme-screenshots.yml
 .gitignore
 .streamlit/config.toml
 ASSET_NOTICE.md
@@ -50,6 +51,7 @@ docs/superpowers/plans/2026-10-22-bid-review.md
 docs/superpowers/specs/2026-10-21-pricesystem-workbench-design.md
 docs/superpowers/specs/2026-10-22-bid-review-design.md
 requirements.txt
+scripts/update_readme_screenshots.py
 static/brand-mark.svg
 static/diamond-chamber.svg
 static/diamond-optics.js
@@ -90,6 +92,7 @@ tests/test_login_scene.py
 tests/test_performance.py
 tests/test_preferences.py
 tests/test_review_pages.py
+tests/test_readme_screenshots.py
 tests/test_reviews.py
 tests/test_schedule.py
 tests/test_services.py

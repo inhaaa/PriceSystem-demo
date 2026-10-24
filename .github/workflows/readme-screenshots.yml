@@ -1,0 +1,51 @@
+name: README screenshot URLs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/images/**'
+      - 'scripts/update_readme_screenshots.py'
+      - 'tests/test_readme_screenshots.py'
+      - '.github/workflows/readme-screenshots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readme-screenshots-main
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Update screenshot URLs and commit README
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git switch --detach origin/main
+            python3 -m unittest tests.test_readme_screenshots -v
+            python3 scripts/update_readme_screenshots.py
+            if git diff --quiet -- README.md; then
+              echo "README screenshot URLs are already current."
+              exit 0
+            fi
+            git add -- README.md
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs: sync README screenshot URLs'
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+          done
+          echo "README update could not be pushed after 3 attempts."
+          exit 1

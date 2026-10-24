@@ -86,6 +86,7 @@ class DataWorkbenchJourneys(unittest.TestCase):
         self.addCleanup(lambda: app.session_state['store'].close())
         app.text_input(key='login_username').set_value('admin')
         app.text_input(key='login_password').set_value('admin')
+        app.session_state['schedule_show_all'] = True
         app.button(key='login_submit').click().run()
         opening = date(2026, 10, 23)
         app.button(key=f'home_day_notices_{opening.isoformat()}').click().run()

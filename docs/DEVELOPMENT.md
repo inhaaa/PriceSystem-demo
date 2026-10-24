@@ -57,6 +57,22 @@ python -m unittest discover -s tests -v
 4. 분석·추천 및 API 화면에 시연용 샘플이라는 표시가 있는지 확인합니다.
 5. 샘플 초기화·로그아웃·새 세션에서 기본 샘플로 시작하는지 확인합니다.
 
+## README 스크린샷 교체
+
+`docs/images/`의 스크린샷을 교체하고 `main`에 push하면 `README screenshot URLs` Actions가 해당 이미지의 마지막 변경 커밋을 확인해 README 주소를 자동 갱신합니다. 이미지 주소가 달라져 GitHub에서 이전 이미지 캐시를 재사용하지 않습니다. README 주소를 직접 수정하거나 개인 토큰을 등록할 필요가 없습니다.
+
+이미지가 그대로라면 README도 수정하지 않습니다. 새 스크린샷은 `docs/images/`에 추가하고 README의 Markdown 이미지 링크로 참조하세요. SVG와 다른 외부 이미지는 자동 갱신 대상에서 제외합니다.
+
+로컬에서도 이미지 변경을 커밋한 뒤 표준 라이브러리 도구를 실행할 수 있습니다. `--check`는 파일을 쓰지 않고 주소 갱신이 필요하면 종료 코드 1을 반환합니다. 미커밋·미추적 이미지나 누락된 참조가 있으면 README를 수정하기 전에 오류를 표시합니다.
+
+```bash
+python scripts/update_readme_screenshots.py
+python scripts/update_readme_screenshots.py --check
+python -m unittest tests.test_readme_screenshots -v
+```
+
+자동화는 README만 별도 커밋합니다. 다른 push와 겹치면 최신 main에서 다시 계산해 일반 push를 최대 3회 시도합니다. Actions 로그에서 성공 여부를 확인할 수 있으며, 브랜치 보호가 자동 커밋을 막으면 관리자가 해당 정책을 검토해야 합니다. 기존 VPS 자동배포는 README만 바뀐 커밋도 배포하므로 자동 갱신 커밋으로 추가 배포가 실행될 수 있습니다.
+
 ## 다음 개선의 기준
 
 개선은 데모 체험 중 확인되는 불편을 기준으로 진행합니다. 접근성 점검, 입력 오류 안내, CSV 형식 설명 보완을 우선 검토할 수 있습니다. 실제 인증, 영구 저장, 외부 API 연결, 분석 엔진 도입은 별도 요구사항·권한·데이터 정책을 먼저 정해야 하는 범위입니다.
