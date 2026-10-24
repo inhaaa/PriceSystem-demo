@@ -56,24 +56,26 @@ PriceSystem은 공고와 관련 자료를 등록하고, 분석 화면을 거쳐 
 
 ## 화면 미리보기
 
+<!-- 스크린샷 교체 시 이미지 URL의 커밋 SHA도 갱신해 이전 이미지 캐시의 재사용을 방지합니다. -->
+
 ### 로그인
 
 공개 체험 계정으로 시작하는 데모 로그인 화면입니다.
 
-![PriceSystem 데모 로그인 화면](docs/images/login.png)
+![PriceSystem 데모 로그인 화면](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/611a46553f12b2926cb04bb7b46e40351cc0fb35/docs/images/login.png)
 
 ### 홈과 업무 공간
 
 개찰일로 묶인 공고 일정을 확인하고, 해당 날짜의 공고 조회나 계산으로 바로 이동합니다. 기존 딥그린 메뉴는 유지하고, 본문은 흰 작업면과 옅은 회색 배경의 공고 작업대로 구성했습니다. 이전 일정은 접어두고 필요한 때 펼쳐볼 수 있습니다.
 
-![PriceSystem 날짜별 공고 일정과 계산 작업](docs/images/home.png)
+![PriceSystem 날짜별 공고 일정과 계산 작업](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/611a46553f12b2926cb04bb7b46e40351cc0fb35/docs/images/home.png)
 
 <details>
 <summary><strong>자료 등록 화면 보기</strong> — 샘플 불러오기부터 선택 등록까지</summary>
 
 관심공고 등록을 첫 화면에 두고 샘플 미리보기와 선택 등록을 제공합니다. 등록 후에는 해당 개찰일의 공고 조회로 이어집니다. 과거데이터와 개찰결과 자료도 보조 탭에서 이용할 수 있습니다.
 
-![관심공고 샘플 미리보기와 선택 등록](docs/images/data-upload.png)
+![관심공고 샘플 미리보기와 선택 등록](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/611a46553f12b2926cb04bb7b46e40351cc0fb35/docs/images/data-upload.png)
 
 </details>
 
@@ -81,13 +83,13 @@ PriceSystem은 공고와 관련 자료를 등록하고, 분석 화면을 거쳐 
 
 개찰일별 공고 목록에서 계산 대상을 고르고, 오른쪽 실행 패널에서 선택 확인·계산·저장을 진행합니다. 공고명·기초금액·개찰일을 우선 보여주며, 공고 상세 탐색을 거치지 않아도 됩니다. 좁은 화면에서는 목록과 실행 패널이 세로로 배치됩니다.
 
-![개찰일별 추천계산 — 추천금액, 실투찰율, 신뢰도 샘플](docs/images/analysis.png)
+![개찰일별 추천계산 — 추천금액, 실투찰율, 신뢰도 샘플](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/611a46553f12b2926cb04bb7b46e40351cc0fb35/docs/images/analysis.png)
 
 ### 백테스트
 
 같은 화면 아래의 **백테스트 샘플** 영역을 펼쳐 공고별 비교표를 확인하고 다운로드할 수 있습니다.
 
-![개찰일별 추천계산의 백테스트 — 가상 공고별 비교표](docs/images/backtest.jpg)
+![개찰일별 추천계산의 백테스트 — 가상 공고별 비교표](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/611a46553f12b2926cb04bb7b46e40351cc0fb35/docs/images/backtest.jpg)
 
 추천·신뢰도·백테스트 수치는 **고정된 가상 샘플**입니다. 운영 데이터나 실제 엔진의 계산·검증 결과를 사용하지 않습니다.
 
