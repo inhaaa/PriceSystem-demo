@@ -1,10 +1,11 @@
 """공고·추천·투찰 업무를 연결하는 공개 데모 작업 공간."""
-from datetime import date
+from datetime import date, timedelta
 from html import escape
 
 import streamlit as st
 
-from demo.schedule import render_schedule
+from demo import schedule as schedule_ui
+from demo.schedule import render_schedule, reset_scope
 from demo.ui import brand, header, workspace_tab_scroll_script
 
 
@@ -24,10 +25,10 @@ PAGES = [
 ]
 PAGE_BY_KEY = {page["key"]: page for page in PAGES}
 SIDEBAR_GROUPS = (
+    ("자료 관리", ("data_upload", "bid_award_search", "category")),
     ("입찰 업무", ("integrated_bids", "daily_notices", "daily_recommend", "my_bid_manage", "my_bid_status", "result_manage")),
     ("업무 관리", ("bid_review",)),
     ("성과 분석", ("performance_report",)),
-    ("자료 관리", ("data_upload", "bid_award_search", "category")),
     ("시스템", ("g2b_api",)),
 )
 
@@ -66,6 +67,7 @@ def open_daily_notices(opening):
                 "daily_notices_other_reason", "daily_notices_ack"):
         st.session_state.pop(key, None)
     st.session_state["daily_notices_date"] = opening
+    st.session_state["daily_notices_page"] = 0
     st.session_state["daily_notices_query"] = opening.isoformat()
     st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
     open_tab("daily_notices")
@@ -136,10 +138,13 @@ def schedule_groups(rows, saved):
     return [groups[opening] for opening in sorted(groups)]
 
 
+def _change_period():
+    reset_scope()
+    st.session_state.pop("home_calculation_date", None)
+
+
 def render_home(store):
-    rows = store.notices()
-    saved = st.session_state.get("demo_recommendations", {})
-    groups = schedule_groups(rows, saved)
+    today = schedule_ui._today()
     with st.container(key="workspace_home"):
         st.markdown('<div class="workspace-utility"><span class="workspace-utility__label">업무 홈</span>'
                     '<span class="workspace-utility__status">DEMO · 가상 데이터</span></div>', unsafe_allow_html=True)
@@ -149,17 +154,31 @@ def render_home(store):
                            '<p>개찰 일정을 확인하고, 필요한 공고의 계산을 이어가세요.</p></header>', unsafe_allow_html=True)
             action.button("관심공고 등록", key="home_open_data_upload", type="primary", icon=":material/add:",
                           width="stretch", on_click=open_tab, args=("data_upload",))
+        periods = [f"{today.year}-{month:02d}" for month in range(1, 13)] + [str(today.year)]
+        if st.session_state.get("home_opening_period") not in periods:
+            st.session_state.pop("home_opening_period", None)
+        with st.container(key="home_period_controls", horizontal=True, vertical_alignment="bottom"):
+            period = st.selectbox("조회 기간", periods, index=today.month - 1, key="home_opening_period",
+                                  format_func=lambda value: f"{value}년 전체" if len(value) == 4
+                                  else f"{value[:4]}년 {int(value[5:])}월", on_change=_change_period)
+            st.button("일정 새로고침", key="home_refresh_schedule", icon=":material/refresh:")
+        rows = store.notices()
         if not rows:
             st.info("등록된 공고가 없습니다. 관심공고를 등록해 주세요.")
-            return
-        today = date.today()
+        week_end = (today + timedelta(days=6)).isoformat()
+        rows = [row for row in rows if row["deadline"].startswith(period)
+                or today.isoformat() <= row["deadline"] <= week_end]
+        saved = st.session_state.get("demo_recommendations", {})
+        groups = schedule_groups(rows, saved)
         upcoming = [group for group in groups if group["date"] >= today.isoformat()]
-        default_date = date.fromisoformat((upcoming or groups)[0]["date"])
+        default_date = date.fromisoformat((upcoming or groups)[0]["date"]) if groups else today
+        if not any(row["deadline"].startswith(period) for row in rows):
+            st.info("선택한 기간에 등록된 개찰 일정이 없습니다.")
         with st.container(key="home_workbench"):
             schedule, tasks = st.columns([2.4, 1], gap="medium")
             with schedule, st.container(key="home_schedule"):
-                render_schedule(groups, saved, open_notices=open_daily_notices,
-                                open_calculation=open_daily_calculation)
+                render_schedule(groups, saved, period=period, open_notices=open_daily_notices,
+                                open_calculation=open_daily_calculation, today=today)
             with tasks, st.container(key="home_action_panel"):
                 st.markdown('<h2 class="workbench-section-title">계산 작업</h2>'
                             '<p class="workbench-section-note">개찰일을 고르고 계산을 시작하세요.</p>', unsafe_allow_html=True)
@@ -176,9 +195,10 @@ def render_home(store):
                           disabled=not count, on_click=open_daily_calculation, args=(opening,))
                 st.button("날짜별 공고 조회", key="home_open_daily_notices", width="stretch",
                           on_click=open_daily_notices, args=(opening,))
-                st.markdown('<div class="workbench-panel-divider"></div><h3 class="workbench-panel-subtitle">저장한 계산</h3>',
+                st.markdown('<div class="workbench-panel-divider"></div><h3 class="workbench-panel-subtitle">저장된 추천금액</h3>',
                             unsafe_allow_html=True)
-                recent = [row for row in rows if row["id"] in saved][-3:]
+                st.caption("선택한 기간의 공고에 저장된 추천 투찰금액입니다. 참고용으로 최대 3건을 표시합니다.")
+                recent = [row for row in rows if row["id"] in saved and row["deadline"].startswith(period)][-3:]
                 if not recent:
                     st.caption("저장한 계산 결과가 없습니다.")
                 for row in reversed(recent):

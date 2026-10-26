@@ -153,11 +153,12 @@ class BidPageJourneys(unittest.TestCase):
         columns = json.loads(result.proto.columns)
         self.assertEqual("right", columns["추천 금액 (원)"].get("alignment"))
 
-    def test_daily_search_uses_date_category_and_one_title_or_number_field(self):
+    def test_daily_search_keeps_core_filters_inside_detailed_conditions(self):
         app = self.page("daily_page")
-        self.assertEqual(["공고명 또는 번호"], [item.label for item in app.text_input])
+        self.assertEqual(["공고명 또는 번호", "공고번호", "업종", "지역", "발주기관", "계약방법"],
+                         [item.label for item in app.text_input])
         self.assertEqual(["개찰일"], [item.label for item in app.date_input])
-        self.assertEqual(["카테고리", "표시할 샘플"], [item.label for item in app.selectbox])
+        self.assertEqual(["분석 카테고리", "표시할 샘플"], [item.label for item in app.selectbox])
         for query in ("DEMO-001", "산책로"):
             app.text_input(key="daily_keyword").set_value(query)
             app.button(key="daily_search").click().run()
@@ -217,7 +218,9 @@ class BidPageJourneys(unittest.TestCase):
     def test_management_and_status_search_keep_only_working_core_filters(self):
         management = self.page("management_page")
         self.assertIn("management_keyword", [item.key for item in management.text_input])
-        self.assertFalse(management.date_input)
+        self.assertEqual(["참가마감일 시작", "참가마감일 종료"], [item.label for item in management.date_input])
+        management.date_input(key="management_start").set_value(date(2026, 10, 1))
+        management.date_input(key="management_end").set_value(date(2026, 10, 31))
         management.text_input(key="management_keyword").set_value("DEMO-007")
         management.button(key="management_search").click().run()
         self.assertEqual(["DEMO-007"], management.dataframe[0].value["공고번호"].tolist())

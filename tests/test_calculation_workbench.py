@@ -167,7 +167,8 @@ class CalculationNavigationTests(unittest.TestCase):
         self.assertEqual("가상 물품", app.selectbox(key="daily_category").value)
         self.assertEqual("DEMO-011", app.text_input(key="daily_keyword").value)
         self.assertEqual(date(2026, 10, 23), app.date_input(key="daily_date").value)
-        self.assertEqual(dict(deadline="2026-10-23", category="가상 물품", keyword="DEMO-011"),
+        self.assertEqual(dict(deadline="2026-10-23", category="가상 물품", keyword="DEMO-011",
+                              number="", license="", region="", agency="", contract=""),
                          app.session_state["daily_query"])
         self.assertEqual((11,), app.session_state["daily_confirmed"])
         self.assertEqual(result, app.session_state["daily_results"])

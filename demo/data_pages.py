@@ -17,6 +17,10 @@ def _notice_display(rows):
              "개찰일": row["deadline"], "결과 상태": row["status"]} for row in rows]
 
 
+def _industry(row):
+    return {"가상 시설": "가상 시설업", "가상 물품": "가상 물품업", "가상 용역": "가상 용역업"}.get(row["category"], "가상 업종")
+
+
 def categories(store):
     descriptions = st.session_state.setdefault("category_descriptions", {})
     with st.form("create_category"):
@@ -114,10 +118,11 @@ def _upload_panel(store, prefix, kind, pdf=False):
                     else:
                         skipped += 1
             else:
+                existing_codes = {row["code"] for row in store.notices()}
                 for row in sample:
                     if row["code"] not in selected:
                         continue
-                    if any(saved["code"] == row["code"] for saved in store.notices()):
+                    if row["code"] in existing_codes:
                         skipped += 1
                     else:
                         archived = next((index for index, bundle in enumerate(st.session_state.get("notice_archive", []))
@@ -129,6 +134,7 @@ def _upload_panel(store, prefix, kind, pdf=False):
                             if kind != "관심공고":
                                 store.save_result({"notice_id": notice_id, "outcome": "샘플 낙찰", "amount": 21500000, "note": "가상 개찰결과"})
                         inserted += 1
+                        existing_codes.add(row["code"])
             result = {"업로드 유형": kind, "파일명": filename, "카테고리": selected_category,
                       "전체 행 수": len(selected), "신규 등록": inserted, "중복 스킵": skipped, "오류": 0,
                       "완료 일시": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -144,7 +150,7 @@ def _upload_panel(store, prefix, kind, pdf=False):
 
 
 def uploads(store):
-    current, historical, result = st.tabs(["관심공고", "과거데이터", "개찰결과"])
+    historical, current, result = st.tabs(["과거데이터", "관심공고", "개찰결과"])
     with current:
         with st.container(key="interest_registration"):
             st.caption("관심공고 등록 후 개찰일별로 조회하고 계산합니다.")
@@ -238,10 +244,11 @@ def _restore_notice(store, index, category):
 
 
 def integrated(store):
-    left, right = st.columns([3, 1])
-    search = left.text_input("공고번호 또는 공고명", key="notice_search")
-    category = right.selectbox("카테고리", ["전체", *store.categories()], key="notice_category")
-    rows = [row for row in store.notices(category=category)
+    left, middle, right = st.columns(3)
+    search = left.text_input("공고번호 또는 공고명", key="notice_search").strip()
+    category = middle.selectbox("카테고리", ["전체", *store.categories()], key="notice_category")
+    status = right.selectbox("결과 상태", ["전체", "접수중", "마감", "완료"], key="notice_status")
+    rows = [row for row in store.notices(category=category, status=status)
             if not search or search.casefold() in f"{row['code']} {row['title']}".casefold()]
     _table(_notice_display(rows))
     if rows:
@@ -261,6 +268,14 @@ def _reset_daily_notices():
     _clear_delete_confirmation()
     st.session_state.pop("daily_notices_query", None)
     st.session_state.pop("daily_notices_select_all", None)
+    st.session_state["daily_notices_page"] = 0
+    st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
+
+
+def _change_daily_page(delta):
+    _clear_delete_confirmation()
+    st.session_state.pop("daily_notices_select_all", None)
+    st.session_state["daily_notices_page"] = max(0, st.session_state.get("daily_notices_page", 0) + delta)
     st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
 
 
@@ -287,6 +302,8 @@ def daily_notices(store):
         if right.button("공고 조회", key="daily_notices_search", type="primary"):
             _clear_delete_confirmation()
             st.session_state["daily_notices_query"] = opening.isoformat()
+            st.session_state["daily_notices_page"] = 0
+            st.session_state.pop("daily_notices_select_all", None)
             st.session_state["daily_notices_revision"] = st.session_state.get("daily_notices_revision", 0) + 1
         requested = st.session_state.get("daily_notices_query")
         if not requested:
@@ -296,7 +313,12 @@ def daily_notices(store):
         if not rows:
             st.info("조회 조건에 맞는 공고가 없습니다.")
             return
+        total = len(rows)
+        page = min(st.session_state.get("daily_notices_page", 0), (total - 1) // 100)
+        st.session_state["daily_notices_page"] = page
+        rows = rows[page * 100:(page + 1) * 100]
         saved = st.session_state.get("demo_recommendations", {})
+        submitted = {row["notice_id"] for row in store.submissions()}
         unsaved = {row["notice_id"] for row in st.session_state.get("daily_results", [])}
         current = st.session_state.get("recommendation_display") or {}
         if current.get("notice_id"):
@@ -304,11 +326,13 @@ def daily_notices(store):
         listing, actions = st.columns([4, 1.3], gap="medium")
         with listing:
             with st.container(key="notice_list_panel"):
-                st.caption(f"총 {len(rows):,}건 · 금액 단위: 원")
+                st.caption(f"총 {total:,}건 · {page + 1}페이지 · 현재 {len(rows):,}건 · 금액 단위: 원")
                 select_all = st.checkbox("전체 선택", key="daily_notices_select_all")
                 display = [{"선택": select_all, "공고번호": row["code"], "공고명": row["title"],
-                            "기초금액": row["base_amount"], "개찰일": row["deadline"],
-                            "계산 이력": "저장된 계산 있음" if row["id"] in saved else "미저장 계산 있음" if row["id"] in unsaved else "없음"}
+                            "개찰일": row["deadline"], "발주기관": row["agency"], "업종": _industry(row),
+                            "기초금액": row["base_amount"], "업무 상태": row["status"],
+                            "계산 이력": "저장된 계산 있음" if row["id"] in saved else "미저장 계산 있음" if row["id"] in unsaved else "없음",
+                            "투찰기록": "있음" if row["id"] in submitted else "없음"}
                            for row in rows]
                 edited = st.data_editor(display, hide_index=True, width="stretch", disabled=[key for key in display[0] if key != "선택"],
                                         column_config=money_columns(display[0]),
@@ -325,6 +349,11 @@ def daily_notices(store):
                           on_click=open_daily_calculation, args=(date.fromisoformat(requested),))
                 if st.button("선택 공고 삭제", key="daily_notices_delete", disabled=not targets, width="stretch"):
                     st.session_state["daily_notices_pending"] = targets
+                previous, following = st.columns(2)
+                previous.button("이전 페이지", key="daily_notices_previous", disabled=page == 0,
+                                on_click=_change_daily_page, args=(-1,))
+                following.button("다음 페이지", key="daily_notices_next", disabled=(page + 1) * 100 >= total,
+                                 on_click=_change_daily_page, args=(1,))
         if not targets or st.session_state.get("daily_notices_pending") != targets:
             return
         selected = [row for row in rows if row["id"] in targets]
@@ -337,6 +366,8 @@ def daily_notices(store):
                 st.warning("이미 계산된 공고가 포함되어 있습니다. 삭제할 공고를 확인해 주세요.")
             if any(target in unsaved and target not in saved for target in targets):
                 st.caption("저장하지 않은 계산 결과는 삭제됩니다.")
+            if submitted.intersection(targets):
+                st.warning("투찰기록이 있는 공고가 포함되어 있습니다. 연결 기록은 보관됩니다.")
             reason = st.selectbox("삭제 사유", ["사유 선택", "나라장터에서 취소·삭제됨", "중복 등록", "참여하지 않음", "기타"],
                                   key="daily_notices_reason")
             if reason == "기타":
@@ -350,32 +381,49 @@ def daily_notices(store):
 
 
 def query(store):
+    defaults = ("", "", "전체", None, None, "", "", "", False, 1000)
+    widget_keys = ("query_title", "query_bid_no", "query_category", "query_date_from", "query_date_to",
+                   "query_agency", "query_region", "query_license", "query_include_recommendation", "query_limit")
+    for key, value in zip(widget_keys, st.session_state.get("query_filters", defaults)):
+        st.session_state.setdefault(key, value)
     with st.form("bid_data_query_form"):
-        left, right = st.columns(2)
+        left, middle, right, last = st.columns(4)
         title = left.text_input("공고명", key="query_title")
-        code = right.text_input("공고번호", key="query_bid_no")
-        left, middle, right = st.columns(3)
-        category = left.selectbox("카테고리", ["전체", *store.categories()], key="query_category")
-        date_from = middle.date_input("개찰일 시작", value=None, key="query_date_from")
-        date_to = right.date_input("개찰일 종료", value=None, key="query_date_to")
+        code = middle.text_input("공고번호", key="query_bid_no")
+        agency = right.text_input("발주기관", key="query_agency")
+        region = last.text_input("지역", key="query_region")
+        left, middle, right, last = st.columns(4)
+        license_type = left.text_input("업종", key="query_license", help="가상 카테고리에 대응하는 데모 업종으로 검색합니다.")
+        category = middle.selectbox("카테고리", ["전체", *store.categories()], key="query_category")
+        date_from = right.date_input("개찰일 시작", value=None, key="query_date_from")
+        date_to = last.date_input("개찰일 종료", value=None, key="query_date_to")
+        left, right = st.columns(2)
+        include_recommendation = left.checkbox("추천 결과 포함", value=False, key="query_include_recommendation")
+        limit = right.number_input("최대 조회 건수", min_value=1, max_value=10000, step=100, key="query_limit")
         submitted = st.form_submit_button("조회", key="query_submit", type="primary")
     if submitted or "query_filters" not in st.session_state:
         if date_from and date_to and date_from > date_to:
             st.error("개찰일 시작일은 종료일보다 늦을 수 없습니다.")
         else:
-            st.session_state["query_filters"] = (title, code, category, date_from, date_to)
-    title, code, category, date_from, date_to = st.session_state.get("query_filters", ("", "", "전체", None, None))
+            st.session_state["query_filters"] = (title.strip(), code.strip(), category, date_from, date_to,
+                                                 agency.strip(), region.strip(), license_type.strip(), include_recommendation, int(limit))
+    title, code, category, date_from, date_to, agency, region, license_type, include_recommendation, limit = st.session_state.get(
+        "query_filters", defaults)
     rows = [row for row in store.notices(category=category)
             if (not title or title.casefold() in row["title"].casefold())
             and (not code or code.casefold() in row["code"].casefold())
+            and (not agency or agency.casefold() in row["agency"].casefold())
+            and (not region or region.casefold() in row["region"].casefold())
+            and (not license_type or license_type.casefold() in _industry(row).casefold())
             and (not date_from or row["deadline"] >= date_from.isoformat())
             and (not date_to or row["deadline"] <= date_to.isoformat())]
-    st.metric("현재 조회 조건 기준", f"총 {len(rows):,}건")
+    st.metric("현재 조회 조건 기준", f"총 {len(rows):,}건", help=f"화면에는 최대 {min(len(rows), limit):,}건을 표시합니다.")
+    rows = rows[:limit]
     actual = {row["notice_id"]: row for row in store.results()}
-    saved = st.session_state.get("demo_recommendations", {})
+    saved = st.session_state.get("demo_recommendations", {}) if include_recommendation else {}
     display = [{"번호(No)": number, **_notice_display([row])[0],
-                "1순위투찰금액": actual.get(row["id"], {}).get("amount"),
-                "추천 투찰금액": saved.get(row["id"], {}).get("amount")}
+                "업종": _industry(row), "1순위투찰금액": actual.get(row["id"], {}).get("amount"),
+                **({"추천 여부": "Y" if row["id"] in saved else "N", "추천 투찰금액": saved.get(row["id"], {}).get("amount")} if include_recommendation else {})}
                for number, row in enumerate(rows, 1)]
     _table(display)
     if rows:

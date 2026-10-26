@@ -46,7 +46,7 @@ class AppJourneys(unittest.TestCase):
         self.assertIn('개찰 일정', markup)
         self.assertIn('등록 공고 기준', markup)
         self.assertIn('schedule_scope_toggle', {button.key for button in app.button})
-        app.selectbox(key='schedule_month').set_value('2026-10').run()
+        app.selectbox(key='home_opening_period').set_value('2026-10').run()
         app.button(key='schedule_scope_toggle').click().run()
         app.button(key="home_day_notices_2026-10-03").click().run()
         self.assertFalse(app.exception)
@@ -65,7 +65,7 @@ class AppJourneys(unittest.TestCase):
         self.assertEqual(len(app.radio), 0)
         self.assertEqual(len([b for b in app.button if str(b.key).startswith("menu_open_")]), 12)
         app.button(key="menu_open_data_upload").click().run()
-        self.assertEqual([tab.label for tab in app.tabs], ["관심공고", "입찰서류함 엑셀", "상세 PDF", "과거데이터", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
+        self.assertEqual([tab.label for tab in app.tabs], ["과거데이터", "관심공고", "입찰서류함 엑셀", "상세 PDF", "개찰결과", "낙찰정보 엑셀", "결과 상세 PDF"])
         app.button(key="menu_open_daily_recommend").click().run()
         self.assertEqual(app.session_state["open_tabs"], ["data_upload", "daily_recommend"])
         app.button(key="tab_close_daily_recommend").click().run()
@@ -93,7 +93,7 @@ class AppJourneys(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['active_tab'], 'performance_report')
         self.assertEqual({item.label: item.value for item in app.metric}, {
-            '투찰 건수': '21건', '낙찰 건수': '8건', '낙찰금액': '116,500,000원',
+            '투찰 기록 건수': '21건', '기록상 낙찰 건수': '9건', '확정 낙찰금액': '123,500,000원',
         })
         monthly = app.dataframe[0].value
         self.assertEqual(monthly.loc[monthly['투찰 건수'].gt(0), '월'].tolist(),
@@ -103,7 +103,7 @@ class AppJourneys(unittest.TestCase):
         app.button(key='reset_samples').click().run()
         app.button(key='menu_open_performance_report').click().run()
         self.assertFalse(app.exception)
-        self.assertEqual({item.label: item.value for item in app.metric}['투찰 건수'], '21건')
+        self.assertEqual({item.label: item.value for item in app.metric}['투찰 기록 건수'], '21건')
 
     def test_review_survives_tab_close_and_clears_on_reset_and_logout(self):
         app = self.login(self.new_app())

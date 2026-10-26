@@ -1,11 +1,11 @@
 """Original workflow layouts backed only by newly written demo data."""
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from html import escape
 
 import pandas as pd
 import streamlit as st
 
-from demo.data_pages import _upload_panel
+from demo.data_pages import _industry, _upload_panel
 from demo.services import (
     REVIEW_CHECKS, REVIEW_STATUSES, api_response, backtest_sample,
     get_review, recommendation, save_review,
@@ -29,6 +29,18 @@ def _notice_choice(label, rows, key):
 def _matches(row, query):
     query = query.strip().casefold()
     return not query or any(query in str(row[field]).casefold() for field in ("code", "title"))
+
+
+def _today_kst():
+    return datetime.now(timezone(timedelta(hours=9))).date()
+
+
+def _matches_details(row, query):
+    """추가 조회 항목은 저장소를 바꾸지 않는 가상 표시값만 사용한다."""
+    values = {"number": row["code"], "agency": row["agency"], "region": row["region"],
+              "license": _industry(row), "contract": "가상 제한경쟁"}
+    return all(str(query.get(key, "")).strip().casefold() in str(value).casefold()
+               for key, value in values.items())
 
 
 def _sample_row(notice, scenario):
@@ -98,6 +110,8 @@ def _daily_recommendations(store):
         st.session_state["daily_date"] = requested_date
         st.session_state["daily_category"] = "전체"
         st.session_state["daily_keyword"] = ""
+        for key in ("no_keyword", "license", "region", "agency", "contract"):
+            st.session_state[f"daily_{key}"] = ""
         st.session_state["daily_select_all"] = True
     st.caption(DEMO_NOTE)
     rows = store.notices()
@@ -108,21 +122,34 @@ def _daily_recommendations(store):
     st.session_state.setdefault("daily_date", date.fromisoformat(previous_query.get("deadline", rows[0]["deadline"])))
     st.session_state.setdefault("daily_category", previous_query.get("category", "전체"))
     st.session_state.setdefault("daily_keyword", previous_query.get("keyword", ""))
+    for widget, field in (("no_keyword", "number"), ("license", "license"), ("region", "region"),
+                          ("agency", "agency"), ("contract", "contract")):
+        st.session_state.setdefault(f"daily_{widget}", previous_query.get(field, ""))
     with st.form("daily_search_form"):
-        a, b, c = st.columns([1, 1, 2])
-        opening = a.date_input("개찰일", key="daily_date")
-        category = b.selectbox("카테고리", ["전체", *store.categories()], key="daily_category")
-        keyword = c.text_input("공고명 또는 번호", key="daily_keyword")
+        opening = st.date_input("개찰일", key="daily_date")
+        with st.expander("상세 조회 조건", expanded=False):
+            a, b, c = st.columns(3)
+            category = a.selectbox("분석 카테고리", ["전체", *store.categories()], key="daily_category")
+            keyword = b.text_input("공고명 또는 번호", key="daily_keyword")
+            number = c.text_input("공고번호", key="daily_no_keyword")
+            a, b, c, d = st.columns(4)
+            license_keyword = a.text_input("업종", key="daily_license")
+            region = b.text_input("지역", key="daily_region")
+            agency = c.text_input("발주기관", key="daily_agency")
+            contract = d.text_input("계약방법", key="daily_contract")
+            st.caption("업종·계약방법은 외부 조회 없는 가상 표시값입니다. 계약방법은 가상 제한경쟁입니다.")
         search = st.form_submit_button("공고 조회", type="primary", key="daily_search")
     if search or requested_date is not None:
-        st.session_state["daily_query"] = dict(deadline=opening.isoformat(), category=category, keyword=keyword)
+        st.session_state["daily_query"] = dict(deadline=opening.isoformat(), category=category, keyword=keyword,
+                                               number=number, license=license_keyword, region=region,
+                                               agency=agency, contract=contract)
         st.session_state["daily_query_revision"] = st.session_state.get("daily_query_revision", 0) + 1
         for key in ("daily_confirmed", "daily_results", "daily_result_selection"):
             st.session_state.pop(key, None)
     query = st.session_state.get("daily_query")
     rows = [row for row in rows if query and row["deadline"] == query["deadline"]
             and (query["category"] == "전체" or row["category"] == query["category"])
-            and _matches(row, query.get("keyword", ""))]
+            and _matches(row, query.get("keyword", "")) and _matches_details(row, query)]
     selected_ids, selected_rows, results = (), [], []
     with st.container(key="daily_workspace"):
         notices_column, result_column = st.columns([2.6, 1], gap="medium")
@@ -236,18 +263,54 @@ def management_page(store):
                     st.session_state["submission_None_company"] = company.strip()
                 st.session_state["demo_company"] = company.strip()
                 st.success("가상 회사 정보를 저장했습니다.")
+    previous = st.session_state.get("management_query", {})
+    for widget, field, default in (
+        ("keyword", "keyword", ""), ("no_keyword", "number", ""), ("agency", "agency", ""),
+        ("region", "region", ""), ("license", "license", ""), ("category", "category", "전체"),
+        ("recommendation_filter", "recommended", "전체"), ("record_filter", "recorded", "전체"),
+        ("result_filter", "resulted", "전체"), ("status", "status", "전체"), ("missing_only", "missing", False),
+    ):
+        st.session_state.setdefault(f"management_{widget}", previous.get(field, default))
     with st.form("management_search_form"):
-        a, b, c = st.columns([2, 1, 1])
-        keyword = a.text_input("공고명 또는 번호", key="management_keyword")
-        category = b.selectbox("카테고리", ["전체", *store.categories()], key="management_category")
+        today = _today_kst()
+        a, b, c, d = st.columns(4)
+        start = a.date_input("참가마감일 시작", previous.get("start", today), key="management_start")
+        end = b.date_input("참가마감일 종료", previous.get("end", today), key="management_end")
+        category = c.selectbox("카테고리", ["전체", *store.categories()], key="management_category")
+        recommended = d.selectbox("추천결과 저장 여부", ["전체", "있음", "없음"], key="management_recommendation_filter")
+        a, b, c, d, e = st.columns(5)
+        number = a.text_input("공고번호", key="management_no_keyword")
+        keyword = b.text_input("공고명 또는 번호", key="management_keyword")
+        agency = c.text_input("발주기관", key="management_agency")
+        region = d.text_input("지역", key="management_region")
+        license_keyword = e.text_input("업종", key="management_license")
+        a, b, c, d = st.columns(4)
+        recorded = a.selectbox("내 투찰 기록 여부", ["전체", "있음", "없음"], key="management_record_filter")
+        resulted = b.selectbox("낙찰결과 존재 여부", ["전체", "있음", "없음"], key="management_result_filter")
         status = c.selectbox("투찰 상태", ["전체", "미입력", *SUBMISSION_STATUSES], key="management_status")
-        st.form_submit_button("조회", type="primary", key="management_search")
+        missing = d.checkbox("미입력 공고만 보기", key="management_missing_only")
+        search = st.form_submit_button("조회", type="primary", key="management_search")
+    if search or "management_query" not in st.session_state:
+        st.session_state["management_query"] = dict(start=start, end=end, category=category, keyword=keyword,
+            number=number, agency=agency, region=region, license=license_keyword,
+            recommended=recommended, recorded=recorded, resulted=resulted, status=status, missing=missing)
+    query = st.session_state["management_query"]
     submissions = {row["notice_id"]: row for row in store.submissions()}
     results = {row["notice_id"]: row for row in store.results()}
     saved = st.session_state.get("demo_recommendations", {})
-    filtered = [row for row in rows if _matches(row, keyword)
-                and (category == "전체" or category == row["category"])
-                and (status == "전체" or submissions.get(row["id"], {}).get("status", "미입력") == status)]
+    def has_record(choice, exists):
+        return choice == "전체" or exists == (choice == "있음")
+    filtered = [row for row in rows if query["start"].isoformat() <= row["deadline"] <= query["end"].isoformat()
+                and _matches(row, query["keyword"]) and _matches_details(row, query)
+                and (query["category"] == "전체" or query["category"] == row["category"])
+                and (query["status"] == "전체" or submissions.get(row["id"], {}).get("status", "미입력") == query["status"])
+                and has_record(query["recommended"], row["id"] in saved)
+                and has_record(query["recorded"], row["id"] in submissions)
+                and has_record(query["resulted"], row["id"] in results)
+                and (not query["missing"] or not submissions.get(row["id"], {}).get("amount"))]
+    if query["start"] > query["end"]:
+        st.error("종료일은 시작일 이후여야 합니다.")
+    st.caption("데모 참가마감일은 기존 샘플 일정, 업종은 가상 분류의 표시값을 사용합니다.")
     a, b, c = st.columns(3)
     a.metric("조회 공고", f"{len(filtered)}건")
     b.metric("투찰 기록", f"{sum(row['id'] in submissions for row in filtered)}건")
@@ -471,14 +534,24 @@ def results_page(store):
 def review_page(store):
     """투찰 제출 상태와 분리된 공고별 준비 항목을 현재 세션에 저장한다."""
     rows = store.notices()
+    with st.container(key="review_period_controls"):
+        year_column, month_column, refresh_column = st.columns([1, 1, 1], vertical_alignment="bottom")
+        year = year_column.number_input("조회 연도", min_value=2000, max_value=2100,
+                                        value=_today_kst().year, step=1, key="review_year")
+        month = month_column.selectbox("조회 월", [None, *range(1, 13)], key="review_month",
+                                        format_func=lambda value: "전체" if value is None else f"{value}월")
+        refresh_column.button("새로 조회", key="review_refresh", width="stretch")
+    prefix = f"{year}" + (f"-{month:02d}" if month else "")
+    rows = [row for row in rows if row["deadline"].startswith(prefix)]
+    st.caption(f"개찰일 기준 · {year}년 " + (f"{month}월" if month else "전체"))
     reviews = st.session_state.setdefault("demo_reviews", {})
     current = {row["id"]: get_review(reviews, row["id"]) for row in rows}
     with st.container(key="review_summary"):
         for column, status in zip(st.columns(4), REVIEW_STATUSES):
             column.metric(status, f"{sum(item['status'] == status for item in current.values())}건")
-    st.caption("전체 등록 공고 기준 · 검토 상태는 실제 투찰의 제출 상태와 별도로 관리합니다.")
+    st.caption("조회된 공고 전체 기준 · 검토 상태는 실제 투찰의 제출 상태와 별도로 관리합니다.")
     if not rows:
-        st.info("검토할 공고가 없습니다. 관심공고를 먼저 등록해 주세요.")
+        st.info("선택한 기간에 검토할 공고가 없습니다. 조회 연도·월을 바꿔 주세요.")
         return
     with st.container(key="review_filters"):
         search, category_column, status_column = st.columns([2, 1, 1])

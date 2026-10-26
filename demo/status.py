@@ -1,5 +1,5 @@
 """외부 시스템과 연결하지 않는 가상 투찰 결과 비교 화면."""
-from datetime import date
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 
 import pandas as pd
@@ -16,6 +16,10 @@ STATUS_COLUMNS = [
 RESULT_OPTIONS = ['전체', '개찰 완료', '낙찰', '미낙찰', '결과 대기', '작성중', '미투찰']
 
 
+def _today_kst():
+    return datetime.now(timezone(timedelta(hours=9))).date()
+
+
 def status_display(notices, submissions, results):
     """가상 기록을 표시용 표로 변환하며 완료된 투찰에만 비교 샘플을 만든다."""
     selected = {}
@@ -28,7 +32,7 @@ def status_display(notices, submissions, results):
     for notice in notices:
         submission = selected.get(notice['id'], {})
         submitted = submission.get('status') == '제출완료'
-        outcome = {'샘플 낙찰': '낙찰', '샘플 미선정': '미낙찰'}.get(outcomes.get(notice['id']), '') if submitted else ''
+        outcome = {'샘플 낙찰': '낙찰', '샘플 미선정': '미낙찰'}.get(outcomes.get(notice['id']), '')
         actual = submission['amount'] if submitted else None
         row = dict.fromkeys(STATUS_COLUMNS, '')
         row.update({
@@ -39,7 +43,7 @@ def status_display(notices, submissions, results):
             '개찰결과 상태': '개찰 완료' if outcome else '결과 대기' if submitted else submission.get('status', '미투찰'),
             '비교 기준': 'DEMO · 가상 기록',
         })
-        if outcome:
+        if submitted and outcome:
             rank = 1 if outcome == '낙찰' else 2 + notice['id'] % 7
             first = actual if rank == 1 else max(0, actual - max(1, actual * (rank - 1) // 1000))
             difference = actual - first
@@ -110,17 +114,51 @@ def _result_colors(row):
     return [style if column in {'내 낙찰상태', '1순위 대비 차이', '1순위 대비 차이율 (%)'} else '' for column in row.index]
 
 
+def _load_source(store, params):
+    """날짜·검색어로 먼저 좁힌 뒤 가상 비교값을 한 번에 만든다."""
+    number, name = params['number'].strip().casefold(), params['name'].strip().casefold()
+    notices = [row for row in store.notices()
+               if params['start'].isoformat() <= row['deadline'] <= params['end'].isoformat()
+               and number in row['code'].casefold() and name in row['title'].casefold()]
+    identities = {row['id'] for row in notices}
+    submissions = [row for row in store.submissions() if row['notice_id'] in identities]
+    results = [row for row in store.results() if row['notice_id'] in identities]
+    result_by_notice = {row['notice_id']: row for row in results}
+    st.session_state['status_context'] = {row['code']: {
+        'result': result_by_notice.get(row['id'], {}),
+    } for row in notices}
+    return status_display(notices, submissions, results)
+
+
+def award_evidence(source, context, number):
+    """이미 조회된 가상 기록만 보여주며 순위로 낙찰 결과를 확정하지 않는다."""
+    selected = source.loc[source['공고번호'].eq(number)]
+    if selected.empty or number not in context:
+        return []
+    row = selected.iloc[0]
+    result = context[number]['result']
+    return [{'항목': label, '조회값': value} for label, value in (
+        ('자료 구분', 'DEMO · 현재 세션의 가상 기록'),
+        ('공고번호', number), ('현재 낙찰상태', row['내 낙찰상태'] or '확인 중'),
+        ('개찰결과 상태', row['개찰결과 상태']), ('내 실제순위', row['내 실제순위'] or '미확인'),
+        ('저장된 결과', result.get('outcome', '조회값 없음')),
+        ('저장된 결과금액 (원)', f"{result['amount']:,}" if result else '조회값 없음'),
+        ('최종 낙찰업체', '가상 샘플은 업체 식별·공식 최종 낙찰 판정을 제공하지 않습니다.'),
+    )]
+
+
 def status_page(store):
     with st.container(key='my_bid_status'):
         if 'status_source' not in st.session_state:
-            source = status_display(store.notices(), store.submissions(), store.results())
-            st.session_state['status_source'] = source
-            days = [date.fromisoformat(value) for value in source['개찰일']]
+            today = _today_kst()
             st.session_state['status_query'] = {
-                'start': min(days) if days else date.today(), 'end': max(days) if days else date.today(),
+                'start': today - timedelta(days=15), 'end': today + timedelta(days=15),
                 'number': '', 'name': '', 'outcome': '전체',
             }
+            st.session_state['status_source'] = _load_source(store, st.session_state['status_query'])
         params = st.session_state['status_query']
+        for key, field in (('status_no_keyword', 'number'), ('status_name_keyword', 'name'), ('status_outcome', 'outcome')):
+            st.session_state.setdefault(key, params[field])
         with st.form('status_search_form'):
             start_column, end_column, number_column, name_column = st.columns(4)
             start = start_column.date_input('개찰일 시작', params['start'], key='status_start')
@@ -132,9 +170,9 @@ def status_page(store):
             with action_column, st.container(key='status_search_action', horizontal=True, horizontal_alignment='right'):
                 submitted = st.form_submit_button('조회', icon=':material/search:', type='primary', width=112, key='status_search')
         if submitted:
-            st.session_state['status_source'] = status_display(store.notices(), store.submissions(), store.results())
             params = {'start': start, 'end': end, 'number': number, 'name': name, 'outcome': outcome}
             st.session_state['status_query'] = params
+            st.session_state['status_source'] = _load_source(store, params)
         if params['start'] > params['end']:
             st.error('종료일은 시작일 이후여야 합니다.')
         base = _query_source(st.session_state['status_source'], params)
@@ -185,5 +223,16 @@ def status_page(store):
                 '1순위 대비 차이율 (%)': st.column_config.TextColumn('차이율 (%)', width='small',
                     help='(내 투찰금액 − 가상 1순위 금액) ÷ 1순위 금액 × 100. 1순위 금액이 0원 또는 미확인이면 공백입니다.'),
             }, key='status_table')
-        st.download_button('내 투찰현황 CSV 다운로드', csv_bytes(display.to_dict('records')),
-                           'demo-bid-status.csv', 'text/csv', key='status_download')
+        with st.expander('낙찰 판정 정보', expanded=False, on_change='rerun', key='status_evidence') as details:
+            if details.open:
+                numbers = display['공고번호'].tolist()
+                if st.session_state.get('status_evidence_notice') not in numbers:
+                    st.session_state.pop('status_evidence_notice', None)
+                number = st.selectbox('판정 정보를 확인할 공고', numbers, key='status_evidence_notice')
+                st.caption('이미 조회된 가상 결과입니다. 순위나 차이금액으로 최종 낙찰을 확정하지 않으며 저장값을 변경하지 않습니다.')
+                st.dataframe(award_evidence(st.session_state['status_source'],
+                                           st.session_state['status_context'], number),
+                             hide_index=True, width='stretch')
+        st.download_button('내 투찰현황 CSV 다운로드',
+                           lambda snapshot=display.copy(deep=True): csv_bytes(snapshot.to_dict('records')),
+                           'demo-bid-status.csv', 'text/csv', key='status_download', on_click='ignore')

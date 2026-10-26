@@ -45,12 +45,24 @@ class StatusDataTests(unittest.TestCase):
 
     def test_draft_unsubmitted_and_pending_results_do_not_invent_comparisons(self):
         rows = self.display().set_index('공고번호')
-        for code in ('DEMO-001', 'DEMO-007', 'DEMO-011', 'DEMO-012'):
+        for code in ('DEMO-001', 'DEMO-007', 'DEMO-012'):
             with self.subTest(code=code):
                 self.assertEqual(rows.loc[code, ['내 낙찰상태', '1순위투찰금액', '1순위 대비 차이',
                                                  '1순위 대비 차이율 (%)', '내 실제순위']].tolist(), [''] * 5)
         self.assertEqual(rows.loc['DEMO-001', '실제투찰금액'], '')
         self.assertEqual(rows.loc['DEMO-007', '실제투찰금액'], '54,000,000')
+
+    def test_recorded_win_without_submission_keeps_result_without_amount_comparison(self):
+        display = self.display()
+        row = display.set_index('공고번호').loc['DEMO-011']
+        self.assertEqual(row['내 낙찰상태'], '낙찰')
+        self.assertEqual(row['개찰결과 상태'], '개찰 완료')
+        self.assertEqual(row['투찰상태'], '미투찰')
+        self.assertEqual(row[['실제투찰금액', '1순위투찰금액', '1순위 대비 차이',
+                              '1순위 대비 차이율 (%)', '내 실제순위']].tolist(), [''] * 5)
+        summary = self.status.comparison_averages(display)['낙찰']
+        self.assertEqual(summary['amount_count'], 1)
+        self.assertEqual(summary['rate_count'], 1)
 
     def test_completed_submission_wins_over_later_draft(self):
         self.store.save_submission(dict(notice_id=9, company='가상 초안', amount=1, status='작성중', memo=''))
@@ -121,6 +133,9 @@ class StatusPageJourneys(unittest.TestCase):
         ).run()
         self.addCleanup(lambda: app.session_state['store'].close())
         self.assertFalse(app.exception)
+        app.date_input(key='status_start').set_value(date(2026, 10, 1))
+        app.date_input(key='status_end').set_value(date(2026, 10, 31))
+        app.button(key='status_search').click().run()
         return app
 
     def test_cards_filter_immediately_toggle_restore_and_sync_dropdown(self):
@@ -128,7 +143,7 @@ class StatusPageJourneys(unittest.TestCase):
         self.assertEqual(len(app.session_state['status_display']), 12)
         app.button(key='status_card_win').click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(app.session_state['status_display']['공고번호'].tolist(), ['DEMO-009'])
+        self.assertEqual(app.session_state['status_display']['공고번호'].tolist(), ['DEMO-011', 'DEMO-009'])
         self.assertEqual(app.selectbox(key='status_outcome').value, '낙찰')
         self.assertEqual(app.button(key='status_card_win').proto.type, 'primary')
         self.assertIn('check_circle', app.button(key='status_card_win').proto.icon)
@@ -171,19 +186,25 @@ class StatusPageJourneys(unittest.TestCase):
     def test_dropdown_query_updates_selection_and_export_matches_visible_rows(self):
         app = self.page()
         app.selectbox(key='status_outcome').set_value('미낙찰')
-        with patch('demo.status.csv_bytes', wraps=csv_bytes) as exporter:
+        status_module = importlib.import_module('demo.status')
+        with patch('demo.status.csv_bytes', wraps=csv_bytes) as exporter, \
+                patch('demo.status.st.download_button', wraps=status_module.st.download_button) as download:
             app.button(key='status_search').click().run()
+            exporter.assert_not_called()
+            export = download.call_args.args[1]
+            self.assertTrue(callable(export))
+            exported_content = export()
         self.assertFalse(app.exception)
         self.assertEqual(app.button(key='status_card_loss').proto.type, 'primary')
         display = app.session_state['status_display']
         self.assertEqual(exporter.call_args.args[0], display.to_dict('records'))
-        exported = list(csv.DictReader(io.StringIO(csv_bytes(exporter.call_args.args[0]).decode('utf-8-sig'))))
+        exported = list(csv.DictReader(io.StringIO(exported_content.decode('utf-8-sig'))))
         self.assertEqual([row['공고번호'] for row in exported], ['DEMO-010'])
         self.assertEqual(exported[0]['1순위 대비 차이율 (%)'], "'+0.40%")
         self.assertIn('CSV', app.get('download_button')[0].proto.label)
         app.selectbox(key='status_outcome').set_value('개찰 완료')
         app.button(key='status_search').click().run()
-        self.assertEqual(len(app.session_state['status_display']), 2)
+        self.assertEqual(len(app.session_state['status_display']), 3)
         self.assertEqual(app.button(key='status_card_loss').proto.type, 'secondary')
 
     def test_empty_search_and_invalid_dates_do_not_retain_old_comparisons(self):

@@ -91,6 +91,10 @@ tests/test_isolation.py
 tests/test_login_scene.py
 tests/test_performance.py
 tests/test_preferences.py
+tests/test_production_bid_parity.py
+tests/test_production_data_parity.py
+tests/test_production_home_parity.py
+tests/test_production_report_parity.py
 tests/test_review_pages.py
 tests/test_readme_screenshots.py
 tests/test_reviews.py

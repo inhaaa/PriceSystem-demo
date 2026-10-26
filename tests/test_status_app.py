@@ -1,5 +1,6 @@
 """실제 메뉴에서 가상 투찰 비교·카드 필터·초기화를 확인한다."""
 from pathlib import Path
+from datetime import date
 import unittest
 
 from streamlit.testing.v1 import AppTest
@@ -31,6 +32,9 @@ class StatusAppJourney(unittest.TestCase):
         app = self.login(self.new_app())
         app.button(key='menu_open_my_bid_status').click().run()
         self.assertFalse(app.exception)
+        app.date_input(key='status_start').set_value(date(2026, 1, 1))
+        app.date_input(key='status_end').set_value(date(2026, 12, 31))
+        app.button(key='status_search').click().run()
         self.assertIn('status_card_win', {button.key for button in app.button})
         before = app.session_state['store'].notices()
         rows = app.session_state['status_display'].set_index('공고번호')
@@ -43,12 +47,15 @@ class StatusAppJourney(unittest.TestCase):
         self.assertEqual(app.button(key='status_card_loss').proto.type, 'primary')
         self.assertEqual(app.selectbox(key='status_outcome').value, '미낙찰')
         app.button(key='status_card_win').click().run()
-        self.assertEqual(len(app.session_state['status_display']), 8)
+        self.assertEqual(len(app.session_state['status_display']), 9)
         self.assertEqual(set(app.session_state['status_display']['내 낙찰상태']), {'낙찰'})
         self.assertEqual(app.session_state['store'].notices(), before)
         app.button(key='reset_samples').click().run()
         app.button(key='menu_open_my_bid_status').click().run()
         self.assertFalse(app.exception)
+        app.date_input(key='status_start').set_value(date(2026, 1, 1))
+        app.date_input(key='status_end').set_value(date(2026, 12, 31))
+        app.button(key='status_search').click().run()
         self.assertEqual(len(app.session_state['status_display']), 95)
         self.assertEqual(app.selectbox(key='status_outcome').value, '전체')
         self.assertEqual(app.button(key='status_card_win').proto.type, 'secondary')

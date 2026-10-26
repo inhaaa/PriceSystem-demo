@@ -26,7 +26,7 @@ class DataWorkbenchJourneys(unittest.TestCase):
     def test_interest_upload_is_first_and_sample_keeps_duplicate_guard(self):
         app = self.page('uploads')
         self.assertEqual([tab.label for tab in app.tabs], [
-            '관심공고', '입찰서류함 엑셀', '상세 PDF', '과거데이터', '개찰결과',
+            '과거데이터', '관심공고', '입찰서류함 엑셀', '상세 PDF', '개찰결과',
             '낙찰정보 엑셀', '결과 상세 PDF',
         ])
         count = len(app.session_state['store'].notices())
@@ -62,7 +62,7 @@ class DataWorkbenchJourneys(unittest.TestCase):
         app.session_state['demo_recommendations'] = {row['id']: {'amount': 22000000}}
         app.button(key='daily_notices_search').click().run()
         self.assertEqual(list(app.dataframe[0].value.columns), [
-            '선택', '공고번호', '공고명', '기초금액', '개찰일', '계산 이력',
+            '선택', '공고번호', '공고명', '개찰일', '발주기관', '업종', '기초금액', '업무 상태', '계산 이력', '투찰기록',
         ])
         self.assertEqual(app.dataframe[0].value.iloc[0]['계산 이력'], '저장된 계산 있음')
         list_columns = [column for column in app.get('column') if len(column.dataframe)]
@@ -86,8 +86,8 @@ class DataWorkbenchJourneys(unittest.TestCase):
         self.addCleanup(lambda: app.session_state['store'].close())
         app.text_input(key='login_username').set_value('admin')
         app.text_input(key='login_password').set_value('admin')
-        app.session_state['schedule_show_all'] = True
         app.button(key='login_submit').click().run()
+        app.button(key='schedule_scope_toggle').click().run()
         opening = date(2026, 10, 23)
         app.button(key=f'home_day_notices_{opening.isoformat()}').click().run()
         self.assertFalse(app.exception)

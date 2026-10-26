@@ -69,7 +69,7 @@ class DataPageJourneys(unittest.TestCase):
 
     def test_original_upload_tabs_and_simple_sample_registration(self):
         app = self.page('uploads')
-        self.assertEqual([tab.label for tab in app.tabs], ['관심공고', '입찰서류함 엑셀', '상세 PDF', '과거데이터', '개찰결과', '낙찰정보 엑셀', '결과 상세 PDF'])
+        self.assertEqual([tab.label for tab in app.tabs], ['과거데이터', '관심공고', '입찰서류함 엑셀', '상세 PDF', '개찰결과', '낙찰정보 엑셀', '결과 상세 PDF'])
         count = len(app.session_state['store'].notices())
         app.button(key='current_excel_load_sample').click().run()
         self.assertTrue(any('선택 등록' in button.label for button in app.button))
@@ -90,7 +90,7 @@ class DataPageJourneys(unittest.TestCase):
         app.button(key='query_submit').click().run()
         self.assertEqual(app.metric[0].value, '총 1건')
         self.assertEqual([tab.label for tab in app.tabs], ['공고 정보', '연결 PDF', '추천 결과'])
-        self.assertEqual({widget.key for widget in app.text_input}, {'query_title', 'query_bid_no'})
+        self.assertEqual({widget.key for widget in app.text_input}, {'query_title', 'query_bid_no', 'query_agency', 'query_region', 'query_license'})
         self.assertIn('1순위투찰금액', app.dataframe[0].value.columns)
         self.assertNotIn('분류 근거', app.dataframe[0].value.columns)
         self.assertEqual(len(app.json), 0)

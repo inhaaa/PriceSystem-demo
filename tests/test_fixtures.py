@@ -41,7 +41,7 @@ class DemoFixtureTests(unittest.TestCase):
         self.assertEqual({row['notice_id'] for row in store.results()[4:]}, history_ids)
         monthly = monthly_performance(notices, store.submissions(), store.results(), year=2026)
         self.assertEqual(tuple(sum(row[key] for row in monthly) for key in ('bid_count', 'win_count', 'award_amount')),
-                         (21, 8, 116_500_000))
+                         (21, 9, 123_500_000))
         self.assertEqual(Counter(row['deadline'][:7] for row in notices[77:]),
                          {'2026-05': 2, '2026-06': 4, '2026-07': 3, '2026-08': 5, '2026-09': 4})
 

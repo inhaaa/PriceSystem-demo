@@ -20,7 +20,7 @@ class MonthlyPerformanceTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 self.aggregate(year=value)
 
-    def test_counts_unique_completed_submissions_and_only_their_awards(self):
+    def test_counts_completed_submissions_and_recorded_awards_independently(self):
         notices = [{'id': i, 'deadline': '2026-06-04', 'category': '가상 시설'} for i in range(1, 6)]
         submissions = [
             {'notice_id': 1, 'status': '제출완료'}, {'notice_id': 1, 'status': '제출완료'},
@@ -36,7 +36,7 @@ class MonthlyPerformanceTests(unittest.TestCase):
         ]
         before = deepcopy((notices, submissions, results))
         self.assertEqual(self.aggregate(notices, submissions, results)[5], {
-            'month': '2026-06', 'bid_count': 3, 'win_count': 1, 'award_amount': 13_000_000,
+            'month': '2026-06', 'bid_count': 3, 'win_count': 3, 'award_amount': 27_000_000,
         })
         self.assertEqual((notices, submissions, results), before)
 
@@ -81,16 +81,16 @@ class PerformancePageTests(unittest.TestCase):
 
     def test_six_months_of_metrics_chart_data_and_table_agree(self):
         app = self.app()
-        self.assertEqual(self.metrics(app), {'투찰 건수': '21건', '낙찰 건수': '8건', '낙찰금액': '116,500,000원'})
+        self.assertEqual(self.metrics(app), {'투찰 기록 건수': '21건', '기록상 낙찰 건수': '9건', '확정 낙찰금액': '123,500,000원'})
         table = app.dataframe[0].value
         self.assertEqual(list(table.columns), ['월', '투찰 건수', '낙찰 건수', '낙찰금액 (원)'])
         self.assertEqual(table.iloc[4:10][['투찰 건수', '낙찰 건수', '낙찰금액 (원)']].values.tolist(), [
             [2, 1, 8_400_000], [4, 2, 23_500_000], [3, 1, 15_800_000],
-            [5, 2, 31_200_000], [4, 1, 24_600_000], [3, 1, 13_000_000],
+            [5, 2, 31_200_000], [4, 1, 24_600_000], [3, 2, 20_000_000],
         ])
         self.assertEqual(len(table), 12)
         counts, amounts = self.chart_frames(app)
-        self.assertEqual(counts.groupby('구분')['건수'].sum().to_dict(), {'낙찰 건수': 8, '투찰 건수': 21})
+        self.assertEqual(counts.groupby('구분')['건수'].sum().to_dict(), {'낙찰 건수': 9, '투찰 건수': 21})
         self.assertEqual(amounts['낙찰금액 (원)'].tolist(), table['낙찰금액 (원)'].tolist())
         self.assertEqual(app.download_button[0].label, '월별 실적 CSV 다운로드')
         self.assertTrue(any('가상' in item.value for item in app.caption))
@@ -102,12 +102,12 @@ class PerformancePageTests(unittest.TestCase):
         originals = [item.proto.spec for item in app.get('vega_lite_chart')]
         app.selectbox(key='report_category').select('가상 시설').run()
         self.assertFalse(app.exception)
-        self.assertEqual(self.metrics(app), {'투찰 건수': '8건', '낙찰 건수': '4건', '낙찰금액': '50,900,000원'})
+        self.assertEqual(self.metrics(app), {'투찰 기록 건수': '8건', '기록상 낙찰 건수': '4건', '확정 낙찰금액': '50,900,000원'})
         self.assertTrue(all(a != b for a, b in zip(originals, [item.proto.spec for item in app.get('vega_lite_chart')])) )
         app.selectbox(key='report_category').select('전체').run()
         store.save_result({**store.results()[0], 'amount': 15_000_000})
         app.run()
-        self.assertEqual(self.metrics(app)['낙찰금액'], '118,500,000원')
+        self.assertEqual(self.metrics(app)['확정 낙찰금액'], '125,500,000원')
         self.assertNotEqual(app.get('vega_lite_chart')[1].proto.spec, originals[1])
         self.assertEqual((store.notices(), store.submissions()), before[:2])
 
@@ -117,15 +117,15 @@ class PerformancePageTests(unittest.TestCase):
         notice = store.get_notice(9)
         store.save_notice({**notice, 'deadline': '2025-12-31'}, notice_id=9)
         app.run()
-        app.selectbox(key='report_year').set_value(2025).run()
+        app.number_input(key='report_year').set_value(2025).run()
         self.assertFalse(app.exception)
-        self.assertEqual(self.metrics(app), {'투찰 건수': '1건', '낙찰 건수': '1건', '낙찰금액': '13,000,000원'})
+        self.assertEqual(self.metrics(app), {'투찰 기록 건수': '1건', '기록상 낙찰 건수': '1건', '확정 낙찰금액': '13,000,000원'})
         self.assertEqual(app.dataframe[0].value['월'].tolist(), [f'2025-{month:02d}' for month in range(1, 13)])
         for row in store.notices():
             store.delete_notice(row['id'])
         app.run()
         self.assertFalse(app.exception)
-        self.assertEqual(self.metrics(app), {'투찰 건수': '0건', '낙찰 건수': '0건', '낙찰금액': '0원'})
+        self.assertEqual(self.metrics(app), {'투찰 기록 건수': '0건', '기록상 낙찰 건수': '0건', '확정 낙찰금액': '0원'})
         self.assertEqual(len(app.dataframe[0].value), 12)
         self.assertTrue(app.info)
 
