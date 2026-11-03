@@ -21,7 +21,7 @@ class ProductionHomeParityTests(unittest.TestCase):
                          ['2026-10-31', '2026-11-02', '2026-11-03'])
         self.assertEqual([group['date'] for group in remaining], ['2026-10-02'])
 
-    def page(self):
+    def page(self, notice_years=()):
         clock = patch.object(schedule, '_today', return_value=date(2026, 10, 29))
         clock.start()
         self.addCleanup(clock.stop)
@@ -34,8 +34,12 @@ if 'store' not in st.session_state:
     sample = st.session_state['store'].notices()[0]
     for code, day in [('DEMO-OCT-END', '2026-10-31'), ('DEMO-NOV-START', '2026-11-02')]:
         st.session_state['store'].save_notice({**sample, 'code': code, 'deadline': day})
+    for year in st.session_state['notice_years']:
+        st.session_state['store'].save_notice({**sample, 'code': f'DEMO-YEAR-{year}', 'deadline': f'{year}-06-15'})
 render_home(st.session_state['store'])
-''', default_timeout=20).run()
+''', default_timeout=20)
+        app.session_state['notice_years'] = notice_years
+        app.run()
         self.addCleanup(lambda: app.session_state['store'].close())
         self.assertFalse(app.exception)
         return app
@@ -72,6 +76,26 @@ render_home(st.session_state['store'])
         app.button(key='home_refresh_schedule').click().run()
         app.button(key='home_day_notices_2026-11-02').click().run()
         self.assertEqual(app.session_state['daily_notices_query'], '2026-11-02')
+        self.assertEqual((store.notices(), store.submissions(), store.results()), before)
+
+    def test_home_periods_include_notice_years_and_default_to_current_month(self):
+        app = self.page((2025, 2027))
+        store = app.session_state['store']
+        periods = app.selectbox(key='home_opening_period')
+        self.assertEqual(periods.value, '2026-10')
+        self.assertEqual(len(periods.options), 39)
+        for year in (2025, 2026, 2027):
+            self.assertIn(f'{year}년 전체', periods.options)
+            for month in range(1, 13):
+                self.assertIn(f'{year}년 {month}월', periods.options)
+        before = (store.notices(), store.submissions(), store.results())
+        for year in (2025, 2027):
+            for period in (f'{year}-06', str(year)):
+                app.selectbox(key='home_opening_period').set_value(period).run()
+                self.assertFalse(app.exception)
+                self.assertEqual(app.selectbox(key='home_opening_period').value, period)
+                app.button(key='schedule_scope_toggle').click().run()
+                self.assertIn(f'DEMO-YEAR-{year}', self.markup(app))
         self.assertEqual((store.notices(), store.submissions(), store.results()), before)
 
 

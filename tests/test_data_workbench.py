@@ -87,6 +87,7 @@ class DataWorkbenchJourneys(unittest.TestCase):
         app.text_input(key='login_username').set_value('admin')
         app.text_input(key='login_password').set_value('admin')
         app.button(key='login_submit').click().run()
+        app.selectbox(key='home_opening_period').set_value('2026-10').run()
         app.button(key='schedule_scope_toggle').click().run()
         opening = date(2026, 10, 23)
         app.button(key=f'home_day_notices_{opening.isoformat()}').click().run()

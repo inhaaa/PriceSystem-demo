@@ -49,7 +49,7 @@ class IsolationTests(unittest.TestCase):
                 self.assertTrue(in_build_context(relative, rules), f'배포 이미지에서 제외된 런타임: {relative}')
 
     def test_application_has_only_declared_imports(self):
-        allowed = {"base64", "collections", "csv", "datetime", "decimal", "hashlib", "html", "io", "json", "re", "pathlib", "sqlite3", "pandas", "streamlit", "demo"}
+        allowed = {"base64", "collections", "csv", "datetime", "decimal", "hashlib", "html", "io", "json", "random", "re", "pathlib", "sqlite3", "pandas", "streamlit", "demo"}
         for path in [ROOT / "app.py", *sorted((ROOT / "demo").glob("*.py"))]:
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                 if isinstance(node, ast.Import):

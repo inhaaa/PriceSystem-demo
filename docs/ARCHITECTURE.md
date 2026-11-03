@@ -15,7 +15,7 @@ PriceSystem 데모는 화면·서비스·저장소를 작은 모듈로 나눕니
 | `demo/store.py` | 인메모리 SQLite 생성, 조회·등록·수정·삭제, 초기화 |
 | `demo/samples.py` | 데모를 위해 새로 만든 가상 샘플 데이터 |
 | `demo/services.py` | 데모 계정 확인, 시연용 분석·API 샘플 응답, 투찰 검토 데이터 계약과 검증 |
-| `demo/fixtures.py` | 기본 기록을 보존한 95개 공고와 6개월 가상 투찰·낙찰 기록 생성 |
+| `demo/fixtures.py` | 기존 95개 공고를 보존하고 2025~2027년 매일의 가상 공고·투찰·개찰결과를 고정 난수로 생성 |
 | `demo/performance.py`, `demo/status.py` | 세션 기록의 읽기 전용 월별 성과와 가상 1순위 비교·결과 카드 필터 |
 | `demo/preferences.py`, `demo/schedule.py` | 브라우저 색상·글꼴 설정과 월별 일정의 표시 범위·접기 상태 관리 |
 | `demo/login_scene.py` | 로컬 그래픽 자산으로 로그인 배경 장식 표시 |

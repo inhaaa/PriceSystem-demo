@@ -73,6 +73,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertNotIn('class="home-editorial"', markup)
         self.assertIn("개찰 일정", markup)
         self.assertIn('schedule_scope_toggle', {button.key for button in app.button})
+        app.selectbox(key='home_opening_period').set_value('2026-10').run()
         app.button(key='schedule_scope_toggle').click().run()
         markup = "\n".join(item.value for item in app.markdown)
         self.assertIn("가상 산책로 안내판 설치", markup)

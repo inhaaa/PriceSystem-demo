@@ -154,15 +154,17 @@ def render_home(store):
                            '<p>개찰 일정을 확인하고, 필요한 공고의 계산을 이어가세요.</p></header>', unsafe_allow_html=True)
             action.button("관심공고 등록", key="home_open_data_upload", type="primary", icon=":material/add:",
                           width="stretch", on_click=open_tab, args=("data_upload",))
-        periods = [f"{today.year}-{month:02d}" for month in range(1, 13)] + [str(today.year)]
+        rows = store.notices()
+        years = sorted({today.year} | {int(row["deadline"][:4]) for row in rows})
+        periods = [period for year in years
+                   for period in [f"{year}-{month:02d}" for month in range(1, 13)] + [str(year)]]
         if st.session_state.get("home_opening_period") not in periods:
             st.session_state.pop("home_opening_period", None)
         with st.container(key="home_period_controls", horizontal=True, vertical_alignment="bottom"):
-            period = st.selectbox("조회 기간", periods, index=today.month - 1, key="home_opening_period",
+            period = st.selectbox("조회 기간", periods, index=periods.index(today.strftime("%Y-%m")), key="home_opening_period",
                                   format_func=lambda value: f"{value}년 전체" if len(value) == 4
                                   else f"{value[:4]}년 {int(value[5:])}월", on_change=_change_period)
             st.button("일정 새로고침", key="home_refresh_schedule", icon=":material/refresh:")
-        rows = store.notices()
         if not rows:
             st.info("등록된 공고가 없습니다. 관심공고를 등록해 주세요.")
         week_end = (today + timedelta(days=6)).isoformat()

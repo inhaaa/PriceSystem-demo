@@ -37,17 +37,20 @@ class StatusAppJourney(unittest.TestCase):
         app.button(key='status_search').click().run()
         self.assertIn('status_card_win', {button.key for button in app.button})
         before = app.session_state['store'].notices()
+        initial_display = app.session_state['status_display'].copy()
         rows = app.session_state['status_display'].set_index('공고번호')
         self.assertEqual(rows.loc['DEMO-010', ['1순위 대비 차이', '1순위 대비 차이율 (%)']].tolist(),
                          ['+116,000', '+0.40%'])
         app.button(key='status_card_loss').click().run()
         self.assertFalse(app.exception)
-        self.assertEqual(len(app.session_state['status_display']), 12)
+        self.assertEqual(len(app.session_state['status_display']),
+                         int(initial_display['내 낙찰상태'].eq('미낙찰').sum()))
         self.assertEqual(set(app.session_state['status_display']['내 낙찰상태']), {'미낙찰'})
         self.assertEqual(app.button(key='status_card_loss').proto.type, 'primary')
         self.assertEqual(app.selectbox(key='status_outcome').value, '미낙찰')
         app.button(key='status_card_win').click().run()
-        self.assertEqual(len(app.session_state['status_display']), 9)
+        self.assertEqual(len(app.session_state['status_display']),
+                         int(initial_display['내 낙찰상태'].eq('낙찰').sum()))
         self.assertEqual(set(app.session_state['status_display']['내 낙찰상태']), {'낙찰'})
         self.assertEqual(app.session_state['store'].notices(), before)
         app.button(key='reset_samples').click().run()
@@ -56,7 +59,8 @@ class StatusAppJourney(unittest.TestCase):
         app.date_input(key='status_start').set_value(date(2026, 1, 1))
         app.date_input(key='status_end').set_value(date(2026, 12, 31))
         app.button(key='status_search').click().run()
-        self.assertEqual(len(app.session_state['status_display']), 95)
+        self.assertEqual(len(app.session_state['status_display']),
+                         sum(row['deadline'].startswith('2026-') for row in before))
         self.assertEqual(app.selectbox(key='status_outcome').value, '전체')
         self.assertEqual(app.button(key='status_card_win').proto.type, 'secondary')
 

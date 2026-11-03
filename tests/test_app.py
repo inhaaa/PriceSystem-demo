@@ -85,25 +85,27 @@ class AppJourneys(unittest.TestCase):
         self.assertEqual(len(app.session_state["store"].notices()), initial)
         self.assertFalse(app.session_state["store"].notices(query="DEMO-CURRENT_EXCEL"))
 
-    def test_performance_menu_uses_six_month_samples_and_reset_restores_them(self):
+    def test_performance_menu_uses_three_year_samples_and_reset_restores_them(self):
         app = self.login(self.new_app())
         self.assertIn('menu_open_performance_report', {button.key for button in app.button})
-        self.assertEqual(len(app.session_state['store'].notices()), 95)
+        store = app.session_state['store']
+        initial = (store.notices(), store.submissions(), store.results())
+        self.assertEqual({row['deadline'][:4] for row in initial[0]}, {'2025', '2026', '2027'})
         app.button(key='menu_open_performance_report').click().run()
         self.assertFalse(app.exception)
         self.assertEqual(app.session_state['active_tab'], 'performance_report')
-        self.assertEqual({item.label: item.value for item in app.metric}, {
-            '투찰 기록 건수': '21건', '기록상 낙찰 건수': '9건', '확정 낙찰금액': '123,500,000원',
-        })
-        monthly = app.dataframe[0].value
-        self.assertEqual(monthly.loc[monthly['투찰 건수'].gt(0), '월'].tolist(),
-                         [f'2026-{month:02d}' for month in range(5, 11)])
-        store = app.session_state['store']
+        for year in (2025, 2026, 2027):
+            app.number_input(key='report_year').set_value(year).run()
+            self.assertFalse(app.exception)
+            monthly = app.dataframe[0].value
+            self.assertEqual(monthly['월'].tolist(), [f'{year}-{month:02d}' for month in range(1, 13)])
+            self.assertTrue(monthly[['투찰 건수', '낙찰 건수', '낙찰금액 (원)']].gt(0).all().all())
         store.delete_submission(store.submissions()[-1]['id'])
         app.button(key='reset_samples').click().run()
         app.button(key='menu_open_performance_report').click().run()
         self.assertFalse(app.exception)
-        self.assertEqual({item.label: item.value for item in app.metric}['투찰 기록 건수'], '21건')
+        restored = app.session_state['store']
+        self.assertEqual((restored.notices(), restored.submissions(), restored.results()), initial)
 
     def test_review_survives_tab_close_and_clears_on_reset_and_logout(self):
         app = self.login(self.new_app())
