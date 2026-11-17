@@ -42,9 +42,11 @@ docs/DEVELOPMENT.md
 docs/images/analysis.png
 docs/images/architecture.svg
 docs/images/backtest.jpg
+docs/images/bid-status.png
 docs/images/data-upload.png
 docs/images/home.png
 docs/images/login.png
+docs/images/performance-report.png
 docs/superpowers/plans/2026-10-21-pricesystem-design.md
 docs/superpowers/plans/2026-10-21-pricesystem-workbench.md
 docs/superpowers/plans/2026-10-22-bid-review.md
