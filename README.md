@@ -14,18 +14,18 @@
 
 조회 월을 고르면 날짜별 공고, 기초금액, 계산 상태를 확인할 수 있습니다. 각 날짜의 `공고 조회`나 `계산` 버튼으로 바로 이동합니다.
 
-![PriceSystem 데모의 개찰일별 공고 일정](docs/images/home.png)
+![PriceSystem 데모의 개찰일별 공고 일정](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/1c362506d3e4b579d84191ac3732dcf0d2aac215/docs/images/home.png)
 
 ### 2. 관심공고 등록과 추천계산
 
 `데이터 등록 → 관심공고`에서 `샘플 불러오기`를 누르고, 미리보기에서 공고를 선택해 등록합니다. `개찰일별 추천계산`에서는 대상 공고를 확인한 뒤 샘플 추천금액을 확인·저장합니다.
 
-![조회 공고 목록과 샘플 추천금액](docs/images/analysis.png)
+![조회 공고 목록과 샘플 추천금액](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/1c362506d3e4b579d84191ac3732dcf0d2aac215/docs/images/analysis.png)
 
 <details>
 <summary>관심공고 등록 화면 보기</summary>
 
-![가상 엑셀 자료 미리보기와 선택 등록](docs/images/data-upload.png)
+![가상 엑셀 자료 미리보기와 선택 등록](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/1c362506d3e4b579d84191ac3732dcf0d2aac215/docs/images/data-upload.png)
 
 </details>
 
@@ -36,7 +36,7 @@
 <details>
 <summary>내 투찰현황 화면 보기</summary>
 
-![가상 투찰 결과와 1순위 투찰금액 비교표](docs/images/bid-status.png)
+![가상 투찰 결과와 1순위 투찰금액 비교표](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/1c362506d3e4b579d84191ac3732dcf0d2aac215/docs/images/bid-status.png)
 
 </details>
 
@@ -47,7 +47,7 @@
 <details>
 <summary>성과 리포트 화면 보기</summary>
 
-![월별 투찰·낙찰 건수와 낙찰금액 추이 차트](docs/images/performance-report.png)
+![월별 투찰·낙찰 건수와 낙찰금액 추이 차트](https://raw.githubusercontent.com/inhaaa/PriceSystem-demo/1c362506d3e4b579d84191ac3732dcf0d2aac215/docs/images/performance-report.png)
 
 </details>
 
